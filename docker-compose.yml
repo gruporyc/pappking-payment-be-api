@@ -1,0 +1,16 @@
+version: '3.0'
+
+services:
+  db:
+    image: mysql:5.7
+    container_name: ppk-mysql
+    volumes:
+    - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ppkpayments
+      MYSQL_DATABASE: ppk_payments
+      MYSQL_USER: ppkpaymentsuser
+      MYSQL_PASSWORD: ppkpayments
+volumes:
+  db_data:
