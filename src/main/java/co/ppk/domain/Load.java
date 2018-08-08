@@ -8,7 +8,7 @@ public class Load {
     private final String id;
     private final String customerId;
     private final float amount;
-    private final Currency currency;
+    private final String currency;
     private final String payerName;
     private final String payerCardLastDigits;
     private final String method;
@@ -21,6 +21,7 @@ public class Load {
     private final String responseCode;
     private final String bankUrl;
     private final String receiptUrl;
+    private final String country;
     private final String createdAt;
     private final String updatedAt;
 
@@ -28,7 +29,7 @@ public class Load {
     public Load(String id,
                    String customerId,
                    float amount,
-                   Currency currency,
+                   String currency,
                    String payerName,
                    String payerCardLastDigits,
                    String method,
@@ -41,6 +42,7 @@ public class Load {
                    String responseCode,
                    String bankUrl,
                    String receiptUrl,
+                   String country,
                    String createdAt,
                    String updatedAt) {
         this.id = id;
@@ -59,6 +61,7 @@ public class Load {
         this.responseCode = responseCode;
         this.bankUrl = bankUrl;
         this.receiptUrl = receiptUrl;
+        this.country = country;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -75,7 +78,7 @@ public class Load {
         return amount;
     }
 
-    public Currency getCurrency() {
+    public String getCurrency() {
         return currency;
     }
 
@@ -127,6 +130,10 @@ public class Load {
         return receiptUrl;
     }
 
+    public String getCountry() {
+        return country;
+    }
+
     public String getCreatedAt() {
         return createdAt;
     }
@@ -139,7 +146,7 @@ public class Load {
         private String id;
         private String customerId;
         private float amount;
-        private Currency currency;
+        private String currency;
         private String payerName;
         private String payerCardLastDigits;
         private String method;
@@ -152,6 +159,7 @@ public class Load {
         private String responseCode;
         private String bankUrl;
         private String receiptUrl;
+        private String country;
         private String createdAt;
         private String updatedAt;
 
@@ -170,7 +178,7 @@ public class Load {
             return this;
         }
 
-        public Load.Builder setCurrency(Currency currency) {
+        public Load.Builder setCurrency(String currency) {
             this.currency = currency;
             return this;
         }
@@ -235,6 +243,11 @@ public class Load {
             return this;
         }
 
+        public Load.Builder setCountry(String country) {
+            this.country = country;
+            return this;
+        }
+
         public Load.Builder setCreatedAt(String createdAt) {
             this.createdAt = createdAt;
             return this;
@@ -248,7 +261,7 @@ public class Load {
         public Load build() {
             return new Load(id, customerId, amount, currency, payerName, payerCardLastDigits, method, orderId,
                     transactionId, status, networkCode, networkMessage, trazabilityCode, responseCode, bankUrl,
-                    receiptUrl, createdAt, updatedAt);
+                    receiptUrl, country, createdAt, updatedAt);
         }
     }
 }

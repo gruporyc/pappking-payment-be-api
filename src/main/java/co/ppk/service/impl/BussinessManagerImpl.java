@@ -5,6 +5,7 @@ import co.ppk.dto.LoadRequestDto;
 import co.ppk.enums.Country;
 import co.ppk.enums.Currency;
 import co.ppk.enums.PaymentMethod;
+import co.ppk.enums.Status;
 import co.ppk.service.BusinessManager;
 import co.ppk.data.PaymentsRepository;
 import co.ppk.utilities.PaymentsGatewaySingleton;
@@ -41,6 +42,24 @@ public class BussinessManagerImpl implements BusinessManager{
         PaymentsGatewaySingleton.getInstance();
         Map<String, String> parameters = new HashMap<>();
         String load_id = UUID.randomUUID().toString();
+
+        String loadId = paymentsRepository.createLoad(new Load.Builder()
+                .setAmount(load.getAmount())
+                .setCurrency(load.getCurrency().name())
+                .setCustomerId(load.getBuyer().getId())
+                .setMethod(load.getMethod().name())
+                .setStatus(Status.INCOMPLETE.name())
+                .setCountry(load.getBuyer().getCountry().name())
+                .build());
+
+        Load.Builder builder = new Load.Builder()
+                .setAmount(load.getAmount())
+                .setCurrency(load.getCurrency().name())
+                .setCustomerId(load.getBuyer().getId())
+                .setMethod(load.getMethod().name())
+                .setStatus(Status.INCOMPLETE.name())
+                .setCountry(load.getBuyer().getCountry().name())
+                .setId(loadId);
 
 //Transaction data.
         parameters.put(PayU.PARAMETERS.ACCOUNT_ID, PAYMENT_ACCOUNT_ID);
@@ -88,7 +107,6 @@ public class BussinessManagerImpl implements BusinessManager{
             parameters.put(PayU.PARAMETERS.PAYER_DOCUMENT_TYPE, load.getDocumentType().name());
             parameters.put(PayU.PARAMETERS.RESPONSE_URL, RESPONSE_URL);
 
-
             parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, load.getMethod().name());
         }
 
@@ -127,6 +145,11 @@ public class BussinessManagerImpl implements BusinessManager{
             parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, load.getCreditCard().getType().name());
             parameters.put(PayU.PARAMETERS.INSTALLMENTS_NUMBER, String.valueOf(load.getCreditCard().getInstallments()));
             parameters.put(PayU.PARAMETERS.COUNTRY, load.getCreditCard().getCountry().name());
+
+            String creditDigits = load.getMethod().name().equals("CREDIT") ?
+                    load.getCreditCard().getNumber().substring(load.getCreditCard().getNumber().length() - 3) : "";
+            builder.setPayerName(!Objects.isNull(load.getPayer().getName()) ? load.getPayer().getName() : "")
+                    .setPayerCardLastDigits(!Objects.isNull(load.getCreditCard().getNumber()) ? creditDigits : "");
         }
 
 // Transaction metadata.
@@ -135,10 +158,9 @@ public class BussinessManagerImpl implements BusinessManager{
         parameters.put(PayU.PARAMETERS.COOKIE, "pt1t38347bs6jc9ruv2ecpv7o2");
         parameters.put(PayU.PARAMETERS.USER_AGENT, "Mozilla/5.0 (Windows NT 5.1; rv:18.0) Gecko/20100101 Firefox/18.0");
 
-        Load.Builder builder = new Load.Builder();
-
+        TransactionResponse transactionResponse;
         try {
-            TransactionResponse transactionResponse = PayUPayments.doAuthorizationAndCapture(parameters);
+            transactionResponse = PayUPayments.doAuthorizationAndCapture(parameters);
             if (transactionResponse.getState().equals(TransactionState.PENDING)){
                 builder.setBankUrl(String.valueOf(transactionResponse.getExtraParameters().get("BANK_URL")));
                 builder.setReceiptUrl(String.valueOf(transactionResponse.getExtraParameters().get("URL_PAYMENT_RECEIPT_HTML")));
@@ -162,16 +184,12 @@ public class BussinessManagerImpl implements BusinessManager{
             throw new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR); //500
         }
 
-        String creditDigits = load.getMethod().name().equals("CREDIT") ? load.getCreditCard().getNumber().substring(load.getCreditCard().getNumber().length() - 3) : "";
-        return builder
-                .setId(load_id)
-                .setAmount(load.getAmount())
-                .setCurrency(load.getCurrency())
-                .setCustomerId(load.getBuyer().getId())
-                .setPayerName(load.getPayer().getName())
-                .setPayerCardLastDigits(creditDigits)
-                .setMethod(load.getMethod().name())
-                .build();
+        Load loadUpdated = builder.build();
+
+        if (transactionResponse.getState().name().equals(Status.APPROVED.name())) {
+            paymentsRepository.uppdateLoad(loadUpdated);
+        }
+        return loadUpdated;
 
     }
 
