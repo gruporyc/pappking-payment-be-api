@@ -8,11 +8,11 @@ CREATE TABLE ppk_payments.loads (
   method varchar(20) DEFAULT NULL,
   order_id varchar(50) DEFAULT NULL,
   transaction_id varchar(50) DEFAULT NULL,
-  status varchar(20) NOT NULL,
-  network_code varchar(20) DEFAULT NULL,
-  network_message varchar(20) DEFAULT NULL,
-  trazability_code varchar(20) DEFAULT NULL,
-  response_code varchar(20) DEFAULT NULL,
+  status varchar(50) NOT NULL,
+  network_code varchar(100) DEFAULT NULL,
+  network_message varchar(100) DEFAULT NULL,
+  trazability_code varchar(100) DEFAULT NULL,
+  response_code varchar(100) DEFAULT NULL,
   country varchar(3) NOT NULL,
   create_date TIMESTAMP DEFAULT NOW(),
   update_date TIMESTAMP DEFAULT NOW()
@@ -26,7 +26,7 @@ CREATE TABLE ppk_payments.services (
   id varchar(36) PRIMARY KEY,
   service_id varchar(36) NOT NULL,
   amount float NOT NULL,
-  status varchar(20) DEFAULT NULL,
+  status varchar(50) DEFAULT NULL,
   create_date TIMESTAMP DEFAULT NOW(),
   update_date TIMESTAMP DEFAULT NOW()
 );
@@ -38,7 +38,7 @@ CREATE TABLE ppk_payments.balances (
   id varchar(36) PRIMARY KEY,
   customer_id varchar(36) NOT NULL,
   balance float NOT NULL,
-  status varchar(20) DEFAULT NULL,
+  status varchar(50) DEFAULT NULL,
   create_date TIMESTAMP DEFAULT NOW(),
   update_date TIMESTAMP DEFAULT NOW()
 );
