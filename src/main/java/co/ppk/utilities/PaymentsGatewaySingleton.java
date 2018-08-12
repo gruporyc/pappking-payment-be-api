@@ -24,7 +24,7 @@ public class PaymentsGatewaySingleton {
                     .orElse("pRRXKOl8ikMmt9u");
             PayU.merchantId = Optional.ofNullable(System.getenv("PAYMENTS_MERCHAN_ID"))
                     .orElse("508029");
-            PayU.isTest = Optional.ofNullable(Boolean.getBoolean(System.getenv("PAYMENTS_TEST_PAYMENT")))
+            PayU.isTest = Optional.ofNullable(Boolean.valueOf(System.getenv("PAYMENTS_TEST_PAYMENT")))
                     .orElse(false);
         }
         return instance;

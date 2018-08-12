@@ -1,7 +1,10 @@
 package co.ppk.service.impl;
 
+import co.ppk.domain.Balance;
 import co.ppk.domain.Load;
+import co.ppk.domain.Service;
 import co.ppk.dto.LoadRequestDto;
+import co.ppk.dto.PaymentDto;
 import co.ppk.enums.Country;
 import co.ppk.enums.Currency;
 import co.ppk.enums.PaymentMethod;
@@ -11,22 +14,25 @@ import co.ppk.data.PaymentsRepository;
 import co.ppk.utilities.PaymentsGatewaySingleton;
 import com.payu.sdk.PayU;
 import com.payu.sdk.PayUPayments;
+import com.payu.sdk.PayUReports;
 import com.payu.sdk.exceptions.ConnectionException;
 import com.payu.sdk.exceptions.InvalidParametersException;
 import com.payu.sdk.exceptions.PayUException;
+import com.payu.sdk.model.Order;
+import com.payu.sdk.model.Transaction;
 import com.payu.sdk.model.TransactionResponse;
 import com.payu.sdk.model.TransactionState;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import sun.rmi.runtime.NewThreadAction;
 
 import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static co.ppk.utilities.Constants.PAYMENT_ACCOUNT_ID;
-import static co.ppk.utilities.Constants.RESPONSE_URL;
-import static co.ppk.utilities.Constants.TAX_VALUE;
+import static co.ppk.utilities.Constants.*;
 
 @Component
 public class BussinessManagerImpl implements BusinessManager{
@@ -63,8 +69,8 @@ public class BussinessManagerImpl implements BusinessManager{
 
 //Transaction data.
         parameters.put(PayU.PARAMETERS.ACCOUNT_ID, PAYMENT_ACCOUNT_ID);
-        parameters.put(PayU.PARAMETERS.REFERENCE_CODE, load_id);
-        parameters.put(PayU.PARAMETERS.DESCRIPTION, "Load payment " + load_id);
+        parameters.put(PayU.PARAMETERS.REFERENCE_CODE, LOAD_TRANSACTION_PREFIX + load_id);
+        parameters.put(PayU.PARAMETERS.DESCRIPTION, TRANSACTION_DESCRIPTION);
         parameters.put(PayU.PARAMETERS.LANGUAGE, "Language.es");
         parameters.put(PayU.PARAMETERS.VALUE, String.valueOf(load.getAmount()));
         parameters.put(PayU.PARAMETERS.CURRENCY, Currency.COP.name());
@@ -73,13 +79,12 @@ public class BussinessManagerImpl implements BusinessManager{
 
 // CASE: cash payment
         if(load.getMethod().name().contains("CASH")) {
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+            DateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT);
             Date currentDate = new Date();
             Calendar c = Calendar.getInstance();
             c.setTime(currentDate);
-            c.add(Calendar.HOUR, 48);
+            c.add(Calendar.HOUR, MAX_PENDING_TIME);
             Date currentDatePlusOne = c.getTime();
-
 
             parameters.put(PayU.PARAMETERS.TAX_VALUE, ((Integer.valueOf(TAX_VALUE) / 100) > 0) ?
                             String.valueOf((Integer.valueOf(TAX_VALUE) / 100) * load.getAmount()) : "0");
@@ -185,12 +190,8 @@ public class BussinessManagerImpl implements BusinessManager{
         }
 
         Load loadUpdated = builder.build();
-
-        if (transactionResponse.getState().name().equals(Status.APPROVED.name())) {
-            paymentsRepository.uppdateLoad(loadUpdated);
-        }
+        paymentsRepository.uppdateLoad(loadUpdated);
         return loadUpdated;
-
     }
 
 
@@ -217,5 +218,114 @@ public class BussinessManagerImpl implements BusinessManager{
             throw new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR); //500
         }
         return banks;
+    }
+
+    @Override
+    public void checkPendingPayments() {
+        System.out.println("Checking pending payments !!");
+        List<Load> pendingLoads = paymentsRepository.getLoadsByStatus(Status.PENDING);
+        for (Load load: pendingLoads) {
+            try {
+                DateFormat dateFormat = new SimpleDateFormat(DATABASE_DATETIME_FORMAT);
+                Calendar loadDate = Calendar.getInstance();
+                loadDate.setTime(dateFormat.parse(load.getCreatedAt()));
+                loadDate.add(Calendar.HOUR, MAX_PENDING_TIME);
+                if(loadDate.getTime().before(new Date())) {
+                    paymentsRepository.updateLoadStatus(load.getId(), Status.DISMISSED);
+                    return;
+                }
+
+// If status is APPROVED then update balance with new amount
+                Status status = checkOrder(load.getTransactionId());
+                if (Objects.isNull(status)) {
+                    return;
+                }
+                if(status.name().equals(Status.APPROVED.name())) {
+                    paymentsRepository.updateBalance(load.getCustomerId(), load.getAmount());
+                    paymentsRepository.updateLoadStatus(load.getId(), Status.APPROVED);
+                } else if (!status.equals(Status.PENDING)){
+                    paymentsRepository.updateLoadStatus(load.getId(), status);
+                }
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public boolean ping() {
+        try {
+            PaymentsGatewaySingleton.getInstance();
+            return PayUPayments.doPing();
+        } catch (PayUException e) {
+            e.printStackTrace();
+            throw new HttpClientErrorException(org.springframework.http.HttpStatus.METHOD_FAILURE); //420
+        } catch (ConnectionException e) {
+            e.printStackTrace();
+            throw new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR); //500
+        }
+    }
+
+    public boolean payService(PaymentDto payment) {
+        if (isPayed(payment.getServiceId())) {
+            return false;
+        }
+        Optional<Balance> balance = paymentsRepository.getBalance(payment.getCustomerId());
+        if (!balance.isPresent()) {
+            throw new HttpClientErrorException(HttpStatus.PRECONDITION_FAILED, "no balance present");
+        }
+        if(balance.get().getBalance() < payment.getAmount()) {
+            throw new HttpClientErrorException(HttpStatus.PRECONDITION_FAILED, "balance insufficient");
+        }
+        if(!balance.get().getStatus().equals(Status.ACTIVE.name())) {
+            throw new HttpClientErrorException(HttpStatus.PRECONDITION_FAILED, "balance not active");
+        }
+
+        paymentsRepository.createServicePayment(payment);
+        return true;
+    }
+
+    public Balance getBalance(String customerId) {
+        Optional<Balance> balance = paymentsRepository.getBalance(customerId);
+        if(!balance.isPresent()) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+        }
+        return balance.get();
+    }
+
+    public Service getService(String serviceId) {
+        Optional<Service> service = paymentsRepository.getService(serviceId);
+        if(!service.isPresent()) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+        }
+        return service.get();
+    }
+
+    private boolean isPayed(String serviceId) {
+        Optional<Service> service = paymentsRepository.getService(serviceId);
+        if (service.isPresent()) {
+            return true;
+        }
+        return false;
+    }
+
+    private Status checkOrder(String transactionId) {
+        Map<String, String> parameters = new HashMap<>();
+        parameters.put(PayU.PARAMETERS.TRANSACTION_ID, transactionId);
+        Status statusResponse = null;
+
+        try {
+            PaymentsGatewaySingleton.getInstance();
+            TransactionResponse response = PayUReports.getTransactionResponse(parameters);
+            statusResponse = Status.valueOf(response.getState().name());
+        } catch (PayUException e) {
+            e.printStackTrace();
+        } catch (ConnectionException e) {
+            e.printStackTrace();
+        } catch (InvalidParametersException e) {
+            e.printStackTrace();
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+        return statusResponse;
     }
 }

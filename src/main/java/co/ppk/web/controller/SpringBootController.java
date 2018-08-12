@@ -9,6 +9,8 @@
  ******************************************************************/
 package co.ppk.web.controller;
 
+import co.ppk.service.BusinessManager;
+import co.ppk.service.impl.BussinessManagerImpl;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
@@ -27,13 +29,29 @@ import co.ppk.config.ApplicationConfig;
 @SpringBootApplication
 @Import({ApplicationConfig.class})
 public class SpringBootController  {
+    /**
+     * @param args
+     */
+    public static void main(String[] args) throws Exception {
+        System.setProperty("PPK_HOME", "/ppk");
+        SpringApplication.run(SpringBootController.class, args);
+        final long timeInterval = 60000;
+        Runnable runnable = new Runnable() {
+            BusinessManager businessManager = new BussinessManagerImpl();
+            public void run() {
+                while (true) {
+                    businessManager.checkPendingPayments();
+                    try {
+                        Thread.sleep(timeInterval);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
 
-	/**
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-		System.setProperty("PPK_HOME", "/ppk");
-		SpringApplication.run(SpringBootController.class, args);
-	}
+        Thread thread = new Thread(runnable);
+        thread.start();
+    }
 
 }

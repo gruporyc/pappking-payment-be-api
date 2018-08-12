@@ -11,13 +11,18 @@
 package co.ppk.web.controller;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
+import co.ppk.domain.Balance;
 import co.ppk.domain.Load;
+import co.ppk.domain.Service;
 import co.ppk.dto.LoadRequestDto;
+import co.ppk.dto.PaymentDto;
 import co.ppk.enums.Country;
 import co.ppk.service.BusinessManager;
 import co.ppk.validators.LoadRequestValidator;
+import co.ppk.validators.PaymentValidator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,16 +65,18 @@ public class ProxyEndpointController extends BaseRestController {
 	@Autowired
 	LoadRequestValidator loadRequestValidator;
 
+    @Autowired
+    PaymentValidator paymentValidator;
+
 	/**
-	 * entry endpoint receiving the message from messaging API to perform proper action
+	 * loadPayment method: perform a new money load for an specific customer
 	 *
-	 * @since 30/06/2018
-	 *
+	 * @param load the whole information necessary to perform money load
 	 * @author jmunoz
+	 * @since 12/08/2018
 	 * @version 1.0.0
+	 * @return
 	 */
-
-
     @RequestMapping(value = "/payment/load", method = RequestMethod.POST)
     public ResponseEntity<Object> loadPayment(@Validated @RequestBody LoadRequestDto load,
                                                  BindingResult result, HttpServletRequest request) {
@@ -89,6 +96,15 @@ public class ProxyEndpointController extends BaseRestController {
 		return responseEntity;
     }
 
+	/**
+	 * getBanks method: Retrieve the list of banks supported by application to make wire transfers
+	 *
+	 * @param country the country where are based banks list
+	 * @author jmunoz
+	 * @since 12/08/2018
+	 * @version 1.0.0
+	 * @return List of banks allowed
+	 */
 	@RequestMapping(value = "/payment/cash/banks/{country}", method = RequestMethod.GET)
 	public ResponseEntity<Object> getBanks(@PathVariable("country") String country, HttpServletRequest request, HttpServletResponse response) {
 
@@ -102,6 +118,104 @@ public class ProxyEndpointController extends BaseRestController {
 
 		return responseEntity;
 	}
+
+    /**
+     * ping method: Test if service is currently available
+     *
+     * @author jmunoz
+     * @since 12/08/2018
+     * @version 1.0.0
+     */
+    @RequestMapping(value = "/payment/ping", method = RequestMethod.GET)
+    public ResponseEntity<Object> ping(HttpServletRequest request, HttpServletResponse response) {
+
+        ResponseEntity responseEntity;
+        try {
+            boolean pingResponse = businessManager.ping();
+            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, pingResponse));
+        } catch (HttpClientErrorException ex) {
+            responseEntity = setErrorResponse(ex, request);
+        }
+
+        return responseEntity;
+    }
+
+    /**
+     * payService method: perform payment for a service discounting amount from customer balance
+     *
+     * @param load the whole information necessary to perform money load
+     * @author jmunoz
+     * @since 12/08/2018
+     * @version 1.0.0
+     * @return
+     */
+    @RequestMapping(value = "/payment/service/pay", method = RequestMethod.POST)
+    public ResponseEntity<Object> payService(@Validated @RequestBody PaymentDto payment,
+                                             BindingResult result, HttpServletRequest request) {
+        paymentValidator.validate(payment, result);
+        ResponseEntity<Object> responseEntity = apiValidator(result);
+        if (responseEntity != null) {
+            return responseEntity;
+        }
+
+        try {
+            boolean paymentResponse = businessManager.payService(payment);
+            if (!paymentResponse) {
+                return ResponseEntity.status(HttpStatus.NOT_MODIFIED).body(createExistsResponse(
+                        ResponseKeyName.PAYMENT_RESPONSE,
+                        new HashMap<String, String>().put("message", "already exists")));
+            }
+            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, paymentResponse));
+        } catch (HttpClientErrorException ex) {
+            responseEntity = setErrorResponse(ex, request);
+        }
+
+        return responseEntity;
+    }
+
+    /**
+     * getBalance method: get the customer current balance
+     *
+     * @param customerId
+     * @author jmunoz
+     * @since 12/08/2018
+     * @version 1.0.0
+     */
+    @RequestMapping(value = "/payment/balance/{customerId}", method = RequestMethod.GET)
+    public ResponseEntity<Object> getBalance(@PathVariable("customerId") String customerId, HttpServletRequest request, HttpServletResponse response) {
+
+        ResponseEntity responseEntity;
+        try {
+            Balance balance = businessManager.getBalance(customerId);
+            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.BALANCE_RESPONSE, balance));
+        } catch (HttpClientErrorException ex) {
+            responseEntity = setErrorResponse(ex, request);
+        }
+
+        return responseEntity;
+    }
+
+    /**
+     * getService method: get the service payment description
+     *
+     * @param serviceId
+     * @author jmunoz
+     * @since 12/08/2018
+     * @version 1.0.0
+     */
+    @RequestMapping(value = "/payment/service/{serviceId}", method = RequestMethod.GET)
+    public ResponseEntity<Object> getService(@PathVariable("serviceId") String serviceId, HttpServletRequest request, HttpServletResponse response) {
+
+        ResponseEntity responseEntity;
+        try {
+            Service service = businessManager.getService(serviceId);
+            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.SERVICE_RESPONSE, service));
+        } catch (HttpClientErrorException ex) {
+            responseEntity = setErrorResponse(ex, request);
+        }
+
+        return responseEntity;
+    }
 
 	private ResponseEntity<Object> setErrorResponse(HttpClientErrorException ex, HttpServletRequest request) {
 		HashMap<String, Object> map = new HashMap<>();
@@ -124,6 +238,11 @@ public class ProxyEndpointController extends BaseRestController {
 				map.put("detail", ex.getMessage());
 				status = HttpStatus.NOT_ACCEPTABLE;
 				break;
+            case 412:
+                map.put("message", "invalid parameter");
+                map.put("detail", ex.getMessage());
+                status = HttpStatus.PRECONDITION_FAILED;
+                break;
 			case 500:
 				status = HttpStatus.INTERNAL_SERVER_ERROR;
 				break;

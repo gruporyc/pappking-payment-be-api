@@ -9,5 +9,7 @@ package co.ppk.enums;
  */
 public enum ResponseKeyName {
 	/** The matter. */
-	PAYMENT_RESPONSE
+	PAYMENT_RESPONSE,
+	BALANCE_RESPONSE,
+	SERVICE_RESPONSE
 }
