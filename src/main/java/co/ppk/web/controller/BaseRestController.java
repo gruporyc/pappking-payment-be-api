@@ -86,4 +86,19 @@ public abstract class BaseRestController {
 		responseMap.put(payLoadName, object);
 		return responseMap;
 	}
+
+	/**
+	 * Create a login response when payment failed.
+	 *
+	 * @param payLoadName the payLoad name - will be used as a key in the map response object
+	 * @param object      the object - will be used a value in the map response object
+	 * @return the hash map - Already exists response map object
+	 */
+
+	protected HashMap<ResponseKeyName, Object> createExistsResponse(ResponseKeyName payLoadName, Object object) {
+
+		HashMap<ResponseKeyName, Object> responseMap = new LinkedHashMap<ResponseKeyName, Object>();
+		responseMap.put(payLoadName, object);
+		return responseMap;
+	}
 }
