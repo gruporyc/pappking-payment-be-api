@@ -1,8 +1,5 @@
 package co.ppk.domain;
 
-import co.ppk.enums.Country;
-import co.ppk.enums.Currency;
-
 public class Load {
 
     private final String id;

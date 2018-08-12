@@ -28,6 +28,10 @@ public class Constants {
 	public static final String RESPONSE_URL = Optional.ofNullable(System.getenv("PAYMENTS_RESPONSE_URL"))
 			.orElse("http://www.pappking.com/payment-response/");
 
+    public static final int CHECK_PAYMENTS_STATUS_INTERVAL = Optional.ofNullable(!Objects.isNull(System.getenv("PAYMENTS_CHECK_INTERVAL_MINUTES")) ?
+            Integer.valueOf(System.getenv("PAYMENTS_MAX_PENDING_HOURS")) : null)
+            .orElse(10);
+
 	public static final int MAX_PENDING_TIME = Optional.ofNullable(
 			!Objects.isNull(System.getenv("PAYMENTS_MAX_PENDING_HOURS")) ?
 					Integer.valueOf(System.getenv("PAYMENTS_MAX_PENDING_HOURS")) : null)

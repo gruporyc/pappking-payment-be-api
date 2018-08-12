@@ -1,6 +1,5 @@
 package co.ppk.data;
 
-import co.ppk.data.DataSourceSingleton;
 import co.ppk.domain.Balance;
 import co.ppk.domain.Load;
 import co.ppk.domain.Service;
@@ -28,38 +27,6 @@ public class PaymentsRepository {
 
         this.ds = DataSourceSingleton.getInstance();
     }
-
-//
-//    public List<Customer> getCustomers() {
-//        QueryRunner run = new QueryRunner(ds);
-//        List<Customer> customers = new LinkedList<>();
-//        try {
-//            String query = "SELECT * FROM ppk_customers.customers;";
-//            List<Customer> customerList = run.query(query,
-//                    rs -> {
-//                        while (rs.next()) {
-//                            customers.add(new Customer.Builder()
-//                                    .setId(rs.getString(1))
-//                                    .setIdentification(rs.getString(2))
-//                                    .setName(rs.getString(3))
-//                                    .setLastName(rs.getString(4))
-//                                    .setEmail(rs.getString(5))
-//                                    .setAddress(rs.getString(6))
-//                                    .setPhone(rs.getString(7))
-//                                    .setType(rs.getString(8))
-//                                    .setStatus(rs.getString(9))
-//                                    .setCreateDate(rs.getString(10))
-//                                    .setUpdateDate(rs.getString(11))
-//                                    .build());
-//                        }
-//                        return customers;
-//                    });
-//            return customerList;
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
-//
     public String createLoad(Load load) {
         QueryRunner run = new QueryRunner(ds);
 
@@ -353,35 +320,4 @@ public class PaymentsRepository {
             throw new RuntimeException(e);
         }
     }
-//
-//    public Optional<Customer> getCustomerByIdentification(String identification) {
-//        QueryRunner run = new QueryRunner(ds);
-//        try {
-//            String query = "SELECT * FROM ppk_customers.customers WHERE identification = '" + identification + "';";
-//            Optional<Customer> customer = run.query(query,
-//                    rs -> {
-//                        if (!rs.next()) {
-//                            Optional<Object> empty = Optional.empty();
-//                            return Optional.empty();
-//                        }
-//                        rs.last();
-//                        return Optional.ofNullable(new Customer.Builder()
-//                                .setId(rs.getString(1))
-//                                .setIdentification(rs.getString(2))
-//                                .setName(rs.getString(3))
-//                                .setLastName(rs.getString(4))
-//                                .setEmail(rs.getString(5))
-//                                .setAddress(rs.getString(6))
-//                                .setPhone(rs.getString(7))
-//                                .setType(rs.getString(8))
-//                                .setStatus(rs.getString(9))
-//                                .setCreateDate(rs.getString(10))
-//                                .setUpdateDate(rs.getString(11))
-//                                .build());
-//                    });
-//            return customer;
-//        } catch (SQLException e) {
-//            throw new RuntimeException(e);
-//        }
-//    }
 }

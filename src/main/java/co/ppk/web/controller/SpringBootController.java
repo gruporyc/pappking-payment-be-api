@@ -17,6 +17,8 @@ import org.springframework.context.annotation.Import;
 
 import co.ppk.config.ApplicationConfig;
 
+import static co.ppk.utilities.Constants.CHECK_PAYMENTS_STATUS_INTERVAL;
+
 /***
  * Configuration class for Spring IOC
  * 
@@ -35,7 +37,7 @@ public class SpringBootController  {
     public static void main(String[] args) throws Exception {
         System.setProperty("PPK_HOME", "/ppk");
         SpringApplication.run(SpringBootController.class, args);
-        final long timeInterval = 60000;
+        final long timeInterval = CHECK_PAYMENTS_STATUS_INTERVAL * 60000;
         Runnable runnable = new Runnable() {
             BusinessManager businessManager = new BussinessManagerImpl();
             public void run() {

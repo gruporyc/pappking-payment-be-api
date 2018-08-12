@@ -18,14 +18,11 @@ import com.payu.sdk.PayUReports;
 import com.payu.sdk.exceptions.ConnectionException;
 import com.payu.sdk.exceptions.InvalidParametersException;
 import com.payu.sdk.exceptions.PayUException;
-import com.payu.sdk.model.Order;
-import com.payu.sdk.model.Transaction;
 import com.payu.sdk.model.TransactionResponse;
 import com.payu.sdk.model.TransactionState;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
-import sun.rmi.runtime.NewThreadAction;
 
 import java.text.DateFormat;
 import java.text.ParseException;
