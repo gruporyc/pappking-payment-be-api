@@ -29,7 +29,7 @@ public class Constants {
 			.orElse("http://www.pappking.com/payment-response/");
 
     public static final int CHECK_PAYMENTS_STATUS_INTERVAL = Optional.ofNullable(!Objects.isNull(System.getenv("PAYMENTS_CHECK_INTERVAL_MINUTES")) ?
-            Integer.valueOf(System.getenv("PAYMENTS_MAX_PENDING_HOURS")) : null)
+            Integer.valueOf(System.getenv("PAYMENTS_CHECK_INTERVAL_MINUTES")) : null)
             .orElse(10);
 
 	public static final int MAX_PENDING_TIME = Optional.ofNullable(
