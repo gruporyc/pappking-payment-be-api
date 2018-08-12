@@ -1,7 +1,5 @@
 package co.ppk.enums;
 
-import java.util.prefs.AbstractPreferences;
-
 public enum Status {
     ACCEPTED,
     REJECTED,
@@ -9,5 +7,6 @@ public enum Status {
     INCOMPLETE,
     ACTIVE,
     SUSPENDED,
-    APPROVED;
+    APPROVED,
+    DISMISSED;
 }
