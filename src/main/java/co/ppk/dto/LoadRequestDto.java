@@ -32,8 +32,6 @@ public class LoadRequestDto {
     @NotNull
     private PersonDto buyer;
     @NotNull
-    private PersonDto payer;
-    @NotNull
     private PaymentMethod method;
     private CreditCardDto creditCard;
     private String financialInstituteCode;
@@ -84,21 +82,6 @@ public class LoadRequestDto {
      */
     public void setBuyer(PersonDto buyer) {
         this.buyer = buyer;
-    }
-
-    /**
-     * @return the payment request payer
-     */
-    @JsonProperty("payer")
-    public PersonDto getPayer() {
-        return payer;
-    }
-
-    /**
-     * @param payer the payment request payer
-     */
-    public void setPayer(PersonDto payer) {
-        this.payer = payer;
     }
 
     /**
@@ -197,7 +180,6 @@ public class LoadRequestDto {
                 "amount=" + amount +
                 ", currency=" + currency +
                 ", buyer=" + buyer +
-                ", payer=" + payer +
                 ", method=" + method +
                 ", creditCard=" + creditCard +
                 ", financialInstituteCode='" + financialInstituteCode + '\'' +

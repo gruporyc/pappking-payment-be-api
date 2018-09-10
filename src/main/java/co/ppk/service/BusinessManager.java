@@ -6,6 +6,7 @@ import co.ppk.domain.Service;
 import co.ppk.dto.LoadRequestDto;
 import co.ppk.dto.PaymentDto;
 import co.ppk.enums.Country;
+import co.ppk.enums.CreditCardType;
 
 import java.util.List;
 
@@ -24,4 +25,6 @@ public interface BusinessManager {
     Balance getBalance(String customerId);
 
     Service getService(String serviceId);
+
+    List<CreditCardType> getCreditCardTypes();
 }

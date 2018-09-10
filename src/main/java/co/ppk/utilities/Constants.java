@@ -1,7 +1,5 @@
 package co.ppk.utilities;
 
-import com.payu.sdk.PayU;
-
 import java.util.Objects;
 import java.util.Optional;
 

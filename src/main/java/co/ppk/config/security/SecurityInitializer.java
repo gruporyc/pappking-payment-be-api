@@ -1,11 +1,11 @@
 /******************************************************************
- *  
- * This code is for the Income verification project.
  *
- * 
- * © 2018, EQB Management All rights reserved. 
- * 
- * 
+ * This code is for the Pappking service project.
+ *
+ *
+ * © 2018, Pappking Management All rights reserved.
+ *
+ *
  ******************************************************************/
 
 package co.ppk.config.security;

@@ -19,6 +19,7 @@ import co.ppk.domain.Service;
 import co.ppk.dto.LoadRequestDto;
 import co.ppk.dto.PaymentDto;
 import co.ppk.enums.Country;
+import co.ppk.enums.CreditCardType;
 import co.ppk.service.BusinessManager;
 import co.ppk.validators.LoadRequestValidator;
 import co.ppk.validators.PaymentValidator;
@@ -42,6 +43,8 @@ import javax.servlet.http.HttpServletResponse;
  * Only service exposition point of services to FE layer
  * 
  * @author jmunoz
+ * @version 1.0.0
+ * @since 08/09/2018
  *
  */
 
@@ -73,8 +76,7 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @param load the whole information necessary to perform money load
 	 * @author jmunoz
 	 * @since 12/08/2018
-	 * @version 1.0.0
-	 * @return
+	 * @return load confirmation registry
 	 */
     @RequestMapping(value = "/payment/load", method = RequestMethod.POST)
     public ResponseEntity<Object> loadPayment(@Validated @RequestBody LoadRequestDto load,
@@ -101,13 +103,12 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @param country the country where are based banks list
 	 * @author jmunoz
 	 * @since 12/08/2018
-	 * @version 1.0.0
 	 * @return List of banks allowed
 	 */
 	@RequestMapping(value = "/payment/cash/banks/{country}", method = RequestMethod.GET)
 	public ResponseEntity<Object> getBanks(@PathVariable("country") String country, HttpServletRequest request, HttpServletResponse response) {
 
-		ResponseEntity responseEntity;
+		ResponseEntity<Object> responseEntity;
     	try {
 			List<com.payu.sdk.model.Bank> banks = businessManager.getBanks(Country.valueOf(country));
 			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, banks));
@@ -123,12 +124,12 @@ public class ProxyEndpointController extends BaseRestController {
      *
      * @author jmunoz
      * @since 12/08/2018
-     * @version 1.0.0
+	 * @return service availability response
      */
     @RequestMapping(value = "/payment/ping", method = RequestMethod.GET)
     public ResponseEntity<Object> ping(HttpServletRequest request, HttpServletResponse response) {
 
-        ResponseEntity responseEntity;
+        ResponseEntity<Object> responseEntity;
         try {
             boolean pingResponse = businessManager.ping();
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, pingResponse));
@@ -142,11 +143,10 @@ public class ProxyEndpointController extends BaseRestController {
     /**
      * payService method: perform payment for a service discounting amount from customer balance
      *
-     * @param load the whole information necessary to perform money load
+     * @param payment the whole information necessary to perform service payment
      * @author jmunoz
      * @since 12/08/2018
-     * @version 1.0.0
-     * @return
+     * @return payment response
      */
     @RequestMapping(value = "/payment/service/pay", method = RequestMethod.POST)
     public ResponseEntity<Object> payService(@Validated @RequestBody PaymentDto payment,
@@ -175,15 +175,15 @@ public class ProxyEndpointController extends BaseRestController {
     /**
      * getBalance method: get the customer current balance
      *
-     * @param customerId
+     * @param customerId Customer universal identifier
      * @author jmunoz
      * @since 12/08/2018
-     * @version 1.0.0
+	 * @return balance of given customer
      */
     @RequestMapping(value = "/payment/balance/{customerId}", method = RequestMethod.GET)
     public ResponseEntity<Object> getBalance(@PathVariable("customerId") String customerId, HttpServletRequest request, HttpServletResponse response) {
 
-        ResponseEntity responseEntity;
+        ResponseEntity<Object> responseEntity;
         try {
             Balance balance = businessManager.getBalance(customerId);
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.BALANCE_RESPONSE, balance));
@@ -197,15 +197,16 @@ public class ProxyEndpointController extends BaseRestController {
     /**
      * getService method: get the service payment description
      *
-     * @param serviceId
+     * @param serviceId service universal identifier
      * @author jmunoz
      * @since 12/08/2018
-     * @version 1.0.0
+	 * @return all data related with the given service id
      */
     @RequestMapping(value = "/payment/service/{serviceId}", method = RequestMethod.GET)
-    public ResponseEntity<Object> getService(@PathVariable("serviceId") String serviceId, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Object> getService(@PathVariable("serviceId") String serviceId, HttpServletRequest request,
+											 HttpServletResponse response) {
 
-        ResponseEntity responseEntity;
+        ResponseEntity<Object> responseEntity;
         try {
             Service service = businessManager.getService(serviceId);
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.SERVICE_RESPONSE, service));
@@ -215,6 +216,26 @@ public class ProxyEndpointController extends BaseRestController {
 
         return responseEntity;
     }
+
+	/**
+	 * getCredicardTypes method: get the list of allowed credit card types
+	 *
+	 * @author jmunoz
+	 * @since 12/08/2018
+	 * @return allowed credit card types
+	 */
+	@RequestMapping(value = "/payment/credit-cards", method = RequestMethod.GET)
+	public ResponseEntity<Object> getService(HttpServletRequest request, HttpServletResponse response) {
+		ResponseEntity<Object> responseEntity;
+		try {
+			List<CreditCardType> types = businessManager.getCreditCardTypes();
+			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.SERVICE_RESPONSE, types));
+		} catch (HttpClientErrorException ex) {
+			responseEntity = setErrorResponse(ex, request);
+		}
+
+		return responseEntity;
+	}
 
 	private ResponseEntity<Object> setErrorResponse(HttpClientErrorException ex, HttpServletRequest request) {
 		HashMap<String, Object> map = new HashMap<>();

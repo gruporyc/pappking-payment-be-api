@@ -4,8 +4,6 @@ public enum PaymentMethod {
     PSE,
     CASH_BALOTO,
     CASH_EFECTY,
-    CASH_SURED,
     CREDIT,
-    DEBIT,
-    TRANSFER
+    VISA_DEBIT
 }

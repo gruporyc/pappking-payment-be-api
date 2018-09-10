@@ -35,6 +35,7 @@ public class SpringBootController  {
      * @param args
      */
     public static void main(String[] args) throws Exception {
+        System.out.println("Starting to check pending payments 0...");
         System.setProperty("PPK_HOME", "/ppk");
         SpringApplication.run(SpringBootController.class, args);
         final long timeInterval = CHECK_PAYMENTS_STATUS_INTERVAL * 60000;
@@ -42,6 +43,7 @@ public class SpringBootController  {
             BusinessManager businessManager = new BussinessManagerImpl();
             public void run() {
                 while (true) {
+                    System.out.println("Starting to check pending payments...");
                     businessManager.checkPendingPayments();
                     try {
                         Thread.sleep(timeInterval);

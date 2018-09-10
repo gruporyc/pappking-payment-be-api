@@ -5,10 +5,7 @@ import co.ppk.domain.Load;
 import co.ppk.domain.Service;
 import co.ppk.dto.LoadRequestDto;
 import co.ppk.dto.PaymentDto;
-import co.ppk.enums.Country;
-import co.ppk.enums.Currency;
-import co.ppk.enums.PaymentMethod;
-import co.ppk.enums.Status;
+import co.ppk.enums.*;
 import co.ppk.service.BusinessManager;
 import co.ppk.data.PaymentsRepository;
 import co.ppk.utilities.PaymentsGatewaySingleton;
@@ -28,8 +25,11 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static co.ppk.utilities.Constants.*;
+import static java.lang.Integer.valueOf;
 
 @Component
 public class BussinessManagerImpl implements BusinessManager{
@@ -70,7 +70,7 @@ public class BussinessManagerImpl implements BusinessManager{
         parameters.put(PayU.PARAMETERS.DESCRIPTION, TRANSACTION_DESCRIPTION);
         parameters.put(PayU.PARAMETERS.LANGUAGE, "Language.es");
         parameters.put(PayU.PARAMETERS.VALUE, String.valueOf(load.getAmount()));
-        parameters.put(PayU.PARAMETERS.CURRENCY, Currency.COP.name());
+        parameters.put(PayU.PARAMETERS.CURRENCY, load.getCurrency().name());
         parameters.put(PayU.PARAMETERS.COUNTRY, load.getBuyer().getCountry().name());
 
 
@@ -83,14 +83,14 @@ public class BussinessManagerImpl implements BusinessManager{
             c.add(Calendar.HOUR, MAX_PENDING_TIME);
             Date currentDatePlusOne = c.getTime();
 
-            parameters.put(PayU.PARAMETERS.TAX_VALUE, ((Integer.valueOf(TAX_VALUE) / 100) > 0) ?
-                            String.valueOf((Integer.valueOf(TAX_VALUE) / 100) * load.getAmount()) : "0");
-            parameters.put(PayU.PARAMETERS.TAX_RETURN_BASE, ((Integer.valueOf(TAX_VALUE) / 100) > 0) ?
-                    String.valueOf(load.getAmount()/((Integer.valueOf(TAX_VALUE) / 100) + 1)) : "0");
+            parameters.put(PayU.PARAMETERS.TAX_VALUE, ((valueOf(TAX_VALUE) / 100) > 0) ?
+                            String.valueOf((valueOf(TAX_VALUE) / 100) * load.getAmount()) : "0");
+            parameters.put(PayU.PARAMETERS.TAX_RETURN_BASE, ((valueOf(TAX_VALUE) / 100) > 0) ?
+                    String.valueOf(load.getAmount()/((valueOf(TAX_VALUE) / 100) + 1)) : "0");
             parameters.put(PayU.PARAMETERS.BUYER_EMAIL, load.getBuyer().getEmail());
-            parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getPayer().getName());
+            parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getBuyer().getName());
             parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, load.getMethod().name().replace("CASH_", ""));
-            parameters.put(PayU.PARAMETERS.COUNTRY, load.getCreditCard().getCountry().name());
+            parameters.put(PayU.PARAMETERS.COUNTRY, load.getBuyer().getCountry().name());
             parameters.put(PayU.PARAMETERS.EXPIRATION_DATE,dateFormat.format(currentDatePlusOne));
         }
 
@@ -98,9 +98,9 @@ public class BussinessManagerImpl implements BusinessManager{
         if(load.getMethod().name().equals("PSE")) {
 
 // Payer data
-            parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getPayer().getName());
-            parameters.put(PayU.PARAMETERS.PAYER_EMAIL, load.getPayer().getEmail());
-            parameters.put(PayU.PARAMETERS.PAYER_CONTACT_PHONE, load.getPayer().getPhone());
+            parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getBuyer().getName());
+            parameters.put(PayU.PARAMETERS.PAYER_EMAIL, load.getBuyer().getEmail());
+            parameters.put(PayU.PARAMETERS.PAYER_CONTACT_PHONE, load.getBuyer().getPhone());
 
 //PSE data
             parameters.put(PayU.PARAMETERS.PSE_FINANCIAL_INSTITUTION_CODE, load.getFinancialInstituteCode());
@@ -128,17 +128,17 @@ public class BussinessManagerImpl implements BusinessManager{
             parameters.put(PayU.PARAMETERS.BUYER_PHONE, load.getBuyer().getPhone());
 
 // Payer data
-            parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getPayer().getName());
-            parameters.put(PayU.PARAMETERS.PAYER_EMAIL, load.getPayer().getEmail());
-            parameters.put(PayU.PARAMETERS.PAYER_CONTACT_PHONE, load.getPayer().getPhone());
-            parameters.put(PayU.PARAMETERS.PAYER_DNI, load.getPayer().getIdentification());
-            parameters.put(PayU.PARAMETERS.PAYER_STREET, load.getPayer().getAddress1());
-            parameters.put(PayU.PARAMETERS.PAYER_STREET_2, load.getPayer().getAddress2());
-            parameters.put(PayU.PARAMETERS.PAYER_CITY, load.getPayer().getCity());
-            parameters.put(PayU.PARAMETERS.PAYER_STATE, load.getPayer().getState());
-            parameters.put(PayU.PARAMETERS.PAYER_COUNTRY, load.getPayer().getCountry().name());
-            parameters.put(PayU.PARAMETERS.PAYER_POSTAL_CODE, load.getPayer().getPostalCode());
-            parameters.put(PayU.PARAMETERS.PAYER_PHONE, load.getPayer().getPhone());
+            parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getBuyer().getName());
+            parameters.put(PayU.PARAMETERS.PAYER_EMAIL, load.getBuyer().getEmail());
+            parameters.put(PayU.PARAMETERS.PAYER_CONTACT_PHONE, load.getBuyer().getPhone());
+            parameters.put(PayU.PARAMETERS.PAYER_DNI, load.getBuyer().getIdentification());
+            parameters.put(PayU.PARAMETERS.PAYER_STREET, load.getBuyer().getAddress1());
+            parameters.put(PayU.PARAMETERS.PAYER_STREET_2, load.getBuyer().getAddress2());
+            parameters.put(PayU.PARAMETERS.PAYER_CITY, load.getBuyer().getCity());
+            parameters.put(PayU.PARAMETERS.PAYER_STATE, load.getBuyer().getState());
+            parameters.put(PayU.PARAMETERS.PAYER_COUNTRY, load.getBuyer().getCountry().name());
+            parameters.put(PayU.PARAMETERS.PAYER_POSTAL_CODE, load.getBuyer().getPostalCode());
+            parameters.put(PayU.PARAMETERS.PAYER_PHONE, load.getBuyer().getPhone());
 
 // Credit card data
             parameters.put(PayU.PARAMETERS.CREDIT_CARD_NUMBER, load.getCreditCard().getNumber());
@@ -150,7 +150,7 @@ public class BussinessManagerImpl implements BusinessManager{
 
             String creditDigits = load.getMethod().name().equals("CREDIT") ?
                     load.getCreditCard().getNumber().substring(load.getCreditCard().getNumber().length() - 3) : "";
-            builder.setPayerName(!Objects.isNull(load.getPayer().getName()) ? load.getPayer().getName() : "")
+            builder.setPayerName(!Objects.isNull(load.getBuyer().getName()) ? load.getBuyer().getName() : "")
                     .setPayerCardLastDigits(!Objects.isNull(load.getCreditCard().getNumber()) ? creditDigits : "");
         }
 
@@ -297,6 +297,11 @@ public class BussinessManagerImpl implements BusinessManager{
         return service.get();
     }
 
+    public List<CreditCardType> getCreditCardTypes() {
+        return Stream.of(CreditCardType.values())
+                .filter(ct -> ct != CreditCardType.UNRECOGNIZED).collect(Collectors.toList());
+    }
+
     private boolean isPayed(String serviceId) {
         Optional<Service> service = paymentsRepository.getService(serviceId);
         if (service.isPresent()) {
@@ -314,13 +319,7 @@ public class BussinessManagerImpl implements BusinessManager{
             PaymentsGatewaySingleton.getInstance();
             TransactionResponse response = PayUReports.getTransactionResponse(parameters);
             statusResponse = Status.valueOf(response.getState().name());
-        } catch (PayUException e) {
-            e.printStackTrace();
-        } catch (ConnectionException e) {
-            e.printStackTrace();
-        } catch (InvalidParametersException e) {
-            e.printStackTrace();
-        }catch (Exception e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return statusResponse;

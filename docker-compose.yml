@@ -1,16 +1,58 @@
+#################################################################################################################
+#
+# IMPORTANT: This docker configuration must be use only for local execution and test purposes. PLEASE NOT APPLY THIS
+# DOCKER DEPLOYMENT IN ANY CLOUD SERVER.
+#
+#################################################################################################################
+
+
 version: '3.0'
 
 services:
+##################################################################################################################
+############################################ Database container ##################################################
   db:
     image: mysql:5.7
     container_name: ppk-mysql
     volumes:
+# If you have some data and structure already built, then you can add to mysql data volume, if not then keep this
+# configuration.
     - db_data:/var/lib/mysql
     restart: always
+# Update DB environment variables with your own values
     environment:
       MYSQL_ROOT_PASSWORD: ppkpayments
       MYSQL_DATABASE: ppk_payments
       MYSQL_USER: ppkpaymentsuser
       MYSQL_PASSWORD: ppkpayments
+
+##################################################################################################################
+############################################ Application container ################################################
+  ppk-payment-api:
+    image: tomcat:8
+# Update container name with your own project proper container name (project-service-type)
+    container_name: ppk-payment-api
+# Update this volume link with your own .war generated file
+    volumes:
+      - /media/jhonnyquest/Data1/pappking/pappking-payment-be-api/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
+    restart: always
+# Database must be linked to the project to be sure that they are in the same docker network
+    links:
+      - db
+    depends_on:
+      - db
+# You should create your own env variables to setup your app
+    environment:
+      PAYMENTS_ACCOUNT_ID: 512321
+      PAYMENTS_TAX_VALUE: 19
+      PAYMENTS_RESPONSE_URL: http://www.pappking.com/payment-response/
+      PAYMENTS_CHECK_INTERVAL_MINUTES: 10
+      PAYMENTS_MAX_PENDING_HOURS: 48
+      PAYMENTS_DB_URL: jdbc:mysql://db:3306/ppk_payments
+      PAYMENTS_JDBC_USERNAME: ppkpaymentsuser
+      PAYMENTS_JDBC_PASSWORD: ppkpayments
+# You must be sure that each application is dispatched by a different port to avoid service crash
+    ports:
+      - 8091:8080
 volumes:
   db_data:
