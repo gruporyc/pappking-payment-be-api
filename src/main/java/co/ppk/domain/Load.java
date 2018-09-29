@@ -4,7 +4,7 @@ public class Load {
 
     private final String id;
     private final String customerId;
-    private final float amount;
+    private final double amount;
     private final String currency;
     private final String payerName;
     private final String payerCardLastDigits;
@@ -25,7 +25,7 @@ public class Load {
 
     public Load(String id,
                    String customerId,
-                   float amount,
+                   double amount,
                    String currency,
                    String payerName,
                    String payerCardLastDigits,
@@ -71,7 +71,7 @@ public class Load {
         return customerId;
     }
 
-    public float getAmount() {
+    public double getAmount() {
         return amount;
     }
 
@@ -142,7 +142,7 @@ public class Load {
     public static class Builder {
         private String id;
         private String customerId;
-        private float amount;
+        private double amount;
         private String currency;
         private String payerName;
         private String payerCardLastDigits;
@@ -170,7 +170,7 @@ public class Load {
             return this;
         }
 
-        public Load.Builder setAmount(float amount) {
+        public Load.Builder setAmount(double amount) {
             this.amount = amount;
             return this;
         }

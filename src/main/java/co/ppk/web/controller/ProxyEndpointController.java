@@ -9,6 +9,7 @@
  ******************************************************************/
 
 package co.ppk.web.controller;
+import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -21,6 +22,7 @@ import co.ppk.dto.PaymentDto;
 import co.ppk.enums.Country;
 import co.ppk.enums.CreditCardType;
 import co.ppk.service.BusinessManager;
+import co.ppk.service.MeatadataBO;
 import co.ppk.validators.LoadRequestValidator;
 import co.ppk.validators.PaymentValidator;
 import org.apache.logging.log4j.LogManager;
@@ -36,8 +38,11 @@ import org.springframework.web.bind.annotation.*;
 import co.ppk.enums.ResponseKeyName;
 import org.springframework.web.client.HttpClientErrorException;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import static co.ppk.utilities.PaymentGatewayHelper.getMetadata;
 
 /**
  * Only service exposition point of services to FE layer
@@ -88,10 +93,13 @@ public class ProxyEndpointController extends BaseRestController {
 		}
 
 		try {
-			Load registry = businessManager.loadPayment(load);
+            MeatadataBO metadata = getMetadata(request);
+            Load registry = businessManager.loadPayment(load, metadata);
 			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, registry));
 		} catch (HttpClientErrorException ex) {
 			responseEntity = setErrorResponse(ex, request);
+		} catch (NoSuchAlgorithmException ex) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR), request);
 		}
 
 		return responseEntity;
@@ -110,10 +118,12 @@ public class ProxyEndpointController extends BaseRestController {
 
 		ResponseEntity<Object> responseEntity;
     	try {
-			List<com.payu.sdk.model.Bank> banks = businessManager.getBanks(Country.valueOf(country));
+			List<com.payu.sdk.model.Bank> banks = businessManager.getBanks(Country.valueOf(country.toUpperCase()));
 			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, banks));
 		} catch (HttpClientErrorException ex) {
 			responseEntity = setErrorResponse(ex, request);
+		} catch (IllegalArgumentException ex) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.NOT_FOUND), request);
 		}
 
 		return responseEntity;

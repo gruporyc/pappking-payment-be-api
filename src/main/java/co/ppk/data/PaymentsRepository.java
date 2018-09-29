@@ -129,7 +129,7 @@ public class PaymentsRepository {
     }
 
 
-    public void updateBalance(String customerId, float amount) {
+    public void updateBalance(String customerId, double amount) {
         QueryRunner run = new QueryRunner(ds);
         Timestamp now = Timestamp.from(Instant.now());
         try {

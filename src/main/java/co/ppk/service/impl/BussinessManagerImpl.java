@@ -8,6 +8,7 @@ import co.ppk.dto.PaymentDto;
 import co.ppk.enums.*;
 import co.ppk.service.BusinessManager;
 import co.ppk.data.PaymentsRepository;
+import co.ppk.service.MeatadataBO;
 import co.ppk.utilities.PaymentsGatewaySingleton;
 import com.payu.sdk.PayU;
 import com.payu.sdk.PayUPayments;
@@ -21,6 +22,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -41,13 +46,14 @@ public class BussinessManagerImpl implements BusinessManager{
     }
 
     @Override
-    public Load loadPayment(LoadRequestDto load) {
-        PaymentsGatewaySingleton.getInstance();
+    public Load loadPayment(LoadRequestDto load, MeatadataBO metadata) throws NoSuchAlgorithmException {
+        PayU payU = PaymentsGatewaySingleton.getInstance();
         Map<String, String> parameters = new HashMap<>();
         String load_id = UUID.randomUUID().toString();
+        double amount = round(load.getAmount(), 2);
 
         String loadId = paymentsRepository.createLoad(new Load.Builder()
-                .setAmount(load.getAmount())
+                .setAmount(amount)
                 .setCurrency(load.getCurrency().name())
                 .setCustomerId(load.getBuyer().getId())
                 .setMethod(load.getMethod().name())
@@ -56,7 +62,7 @@ public class BussinessManagerImpl implements BusinessManager{
                 .build());
 
         Load.Builder builder = new Load.Builder()
-                .setAmount(load.getAmount())
+                .setAmount(amount)
                 .setCurrency(load.getCurrency().name())
                 .setCustomerId(load.getBuyer().getId())
                 .setMethod(load.getMethod().name())
@@ -66,10 +72,10 @@ public class BussinessManagerImpl implements BusinessManager{
 
 //Transaction data.
         parameters.put(PayU.PARAMETERS.ACCOUNT_ID, PAYMENT_ACCOUNT_ID);
-        parameters.put(PayU.PARAMETERS.REFERENCE_CODE, LOAD_TRANSACTION_PREFIX + load_id);
-        parameters.put(PayU.PARAMETERS.DESCRIPTION, TRANSACTION_DESCRIPTION);
+        parameters.put(PayU.PARAMETERS.REFERENCE_CODE, load_id);
+        parameters.put(PayU.PARAMETERS.DESCRIPTION, load.getDescription());
         parameters.put(PayU.PARAMETERS.LANGUAGE, "Language.es");
-        parameters.put(PayU.PARAMETERS.VALUE, String.valueOf(load.getAmount()));
+        parameters.put(PayU.PARAMETERS.VALUE, String.valueOf(round(load.getAmount(), 2)));
         parameters.put(PayU.PARAMETERS.CURRENCY, load.getCurrency().name());
         parameters.put(PayU.PARAMETERS.COUNTRY, load.getBuyer().getCountry().name());
 
@@ -155,10 +161,24 @@ public class BussinessManagerImpl implements BusinessManager{
         }
 
 // Transaction metadata.
-        parameters.put(PayU.PARAMETERS.DEVICE_SESSION_ID, "vghs6tvkcle931686k1900o6e1");
-        parameters.put(PayU.PARAMETERS.IP_ADDRESS, "127.0.0.1");
-        parameters.put(PayU.PARAMETERS.COOKIE, "pt1t38347bs6jc9ruv2ecpv7o2");
-        parameters.put(PayU.PARAMETERS.USER_AGENT, "Mozilla/5.0 (Windows NT 5.1; rv:18.0) Gecko/20100101 Firefox/18.0");
+        MessageDigest mdEnc = MessageDigest.getInstance("MD5");
+        String textToDigest = PAYU_API_KEY + "~" +
+                PAYU_MERCHANT_ID + "~" +
+                load_id + "~" +
+                String.valueOf(amount) + "~" +
+                load.getCurrency().name();
+        mdEnc.update(textToDigest.getBytes());
+
+        byte[] digest = mdEnc.digest();
+
+        StringBuffer sb = new StringBuffer();
+        for (byte aDigest : digest) sb.append(Integer.toString((aDigest & 0xff) + 0x100, 16).substring(1));
+
+        parameters.put(PayU.PARAMETERS.SIGNATURE, sb.toString());
+        parameters.put(PayU.PARAMETERS.DEVICE_SESSION_ID, metadata.getSessionId());
+        parameters.put(PayU.PARAMETERS.IP_ADDRESS, metadata.getRemoteIp());
+        parameters.put(PayU.PARAMETERS.COOKIE, metadata.getCookie());
+        parameters.put(PayU.PARAMETERS.USER_AGENT, metadata.getUserAgent());
 
         TransactionResponse transactionResponse;
         try {
@@ -219,8 +239,12 @@ public class BussinessManagerImpl implements BusinessManager{
 
     @Override
     public void checkPendingPayments() {
-        System.out.println("Checking pending payments !!");
         List<Load> pendingLoads = paymentsRepository.getLoadsByStatus(Status.PENDING);
+        if(pendingLoads.isEmpty()) {
+            System.out.println("No loads pending for conciliate.");
+        } else {
+            System.out.println("Loads pending for conciliate: " + pendingLoads.size());
+        }
         for (Load load: pendingLoads) {
             try {
                 DateFormat dateFormat = new SimpleDateFormat(DATABASE_DATETIME_FORMAT);
@@ -238,7 +262,7 @@ public class BussinessManagerImpl implements BusinessManager{
                     return;
                 }
                 if(status.name().equals(Status.APPROVED.name())) {
-                    paymentsRepository.updateBalance(load.getCustomerId(), load.getAmount());
+                    paymentsRepository.updateBalance(load.getCustomerId(), round(load.getAmount(), 2));
                     paymentsRepository.updateLoadStatus(load.getId(), Status.APPROVED);
                 } else if (!status.equals(Status.PENDING)){
                     paymentsRepository.updateLoadStatus(load.getId(), status);
@@ -323,5 +347,13 @@ public class BussinessManagerImpl implements BusinessManager{
             e.printStackTrace();
         }
         return statusResponse;
+    }
+
+    private static double round(double value, int places) {
+        if (places < 0) throw new IllegalArgumentException();
+
+        BigDecimal bd = new BigDecimal(value);
+        bd = bd.setScale(places, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 }

@@ -10,6 +10,7 @@
 
 package co.ppk.web.controller;
 
+import co.ppk.service.CheckPaymentsService;
 import org.apache.coyote.AbstractProtocol;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -36,19 +37,6 @@ public class PingController {
 
 	@RequestMapping(value = "/ping", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Object> pingService(HttpServletRequest request) {
-
-//		HttpSession session = request.getSession();
-//        int connectionTimeout = session.getMaxInactiveInterval();
-//        //session.setMaxInactiveInterval(10*60);
-//
-//		int expectedTimeout = 100500;
-//		if (connectionTimeout != expectedTimeout) {
-//			throw new IllegalStateException("incorrect connection timeout, expected [" + expectedTimeout + "] but found [" + connectionTimeout + "]");
-//		} else {
-//			System.out.println("Connection timeout is set as expected to " + expectedTimeout);
-//		}
-
-
         try {
             for(int i = 0 ; i < 10 ; i++) {
                 TimeUnit.MILLISECONDS.sleep(1000);

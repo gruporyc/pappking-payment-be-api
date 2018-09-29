@@ -5,6 +5,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
+import static co.ppk.utilities.Constants.*;
+
 @Component
 public class PaymentsGatewaySingleton {
 
@@ -14,18 +16,12 @@ public class PaymentsGatewaySingleton {
 
     public static synchronized PayU getInstance() {
         if (instance == null) {
-            PayU.paymentsUrl = Optional.ofNullable(System.getenv("PAYMENTS_RESPONSE_URL"))
-                    .orElse("https://sandbox.api.payulatam.com/payments-api/");
-            PayU.reportsUrl = Optional.ofNullable(System.getenv("PAYMENTS_REPORTS_RESPONSE_URL"))
-                    .orElse("https://sandbox.api.payulatam.com/reports-api/");
-            PayU.apiKey = Optional.ofNullable(System.getenv("PAYMENTS_API_KEY"))
-                    .orElse("4Vj8eK4rloUd272L48hsrarnUA");
-            PayU.apiLogin = Optional.ofNullable(System.getenv("PAYMENTS_API_LOGIN"))
-                    .orElse("pRRXKOl8ikMmt9u");
-            PayU.merchantId = Optional.ofNullable(System.getenv("PAYMENTS_MERCHAN_ID"))
-                    .orElse("508029");
-            PayU.isTest = Optional.ofNullable(Boolean.valueOf(System.getenv("PAYMENTS_TEST_PAYMENT")))
-                    .orElse(false);
+            PayU.paymentsUrl = PAYU_PAIMENTS_URL;
+            PayU.reportsUrl = PAYU_REPORTS_URL;
+            PayU.apiKey = PAYU_API_KEY;
+            PayU.apiLogin = PAYU_API_LOGIN;
+            PayU.merchantId = PAYU_MERCHANT_ID;
+            PayU.isTest = PAYU_IS_TEST;
         }
         return instance;
     }

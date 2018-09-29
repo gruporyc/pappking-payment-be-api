@@ -34,23 +34,16 @@ services:
     container_name: ppk-payment-api
 # Update this volume link with your own .war generated file
     volumes:
-      - /media/jhonnyquest/Data1/pappking/pappking-payment-be-api/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
+      - /media/jhonnyquest/Data/pappking/pappking-payment-be-api/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
+# You should create your own env variables to setup your app
+    env_file:
+      - /media/jhonnyquest/Data/pappking/payments.env
     restart: always
 # Database must be linked to the project to be sure that they are in the same docker network
     links:
       - db
     depends_on:
       - db
-# You should create your own env variables to setup your app
-    environment:
-      PAYMENTS_ACCOUNT_ID: 512321
-      PAYMENTS_TAX_VALUE: 19
-      PAYMENTS_RESPONSE_URL: http://www.pappking.com/payment-response/
-      PAYMENTS_CHECK_INTERVAL_MINUTES: 10
-      PAYMENTS_MAX_PENDING_HOURS: 48
-      PAYMENTS_DB_URL: jdbc:mysql://db:3306/ppk_payments
-      PAYMENTS_JDBC_USERNAME: ppkpaymentsuser
-      PAYMENTS_JDBC_PASSWORD: ppkpayments
 # You must be sure that each application is dispatched by a different port to avoid service crash
     ports:
       - 8091:8080
