@@ -10,6 +10,7 @@
 
 package co.ppk.web.controller;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Properties;
@@ -17,12 +18,16 @@ import java.util.Properties;
 import co.ppk.domain.Balance;
 import co.ppk.domain.Load;
 import co.ppk.domain.Service;
+import co.ppk.dto.ApiKeyDto;
+import co.ppk.dto.ClientDto;
 import co.ppk.dto.LoadRequestDto;
 import co.ppk.dto.PaymentDto;
 import co.ppk.enums.Country;
 import co.ppk.enums.CreditCardType;
 import co.ppk.service.BusinessManager;
 import co.ppk.service.MeatadataBO;
+import co.ppk.validators.ApiKeyValidator;
+import co.ppk.validators.ClientValidator;
 import co.ppk.validators.LoadRequestValidator;
 import co.ppk.validators.PaymentValidator;
 import org.apache.logging.log4j.LogManager;
@@ -42,7 +47,9 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import static co.ppk.utilities.Constants.CURRENT_CLIENT_KEY_HEADER;
 import static co.ppk.utilities.PaymentGatewayHelper.getMetadata;
+import static co.ppk.utilities.KeyHelper.validateKey;
 
 /**
  * Only service exposition point of services to FE layer
@@ -75,6 +82,12 @@ public class ProxyEndpointController extends BaseRestController {
     @Autowired
     PaymentValidator paymentValidator;
 
+    @Autowired
+    ClientValidator clientValidator;
+
+    @Autowired
+    ApiKeyValidator apiKeyValidator;
+
 	/**
 	 * loadPayment method: perform a new money load for an specific customer
 	 *
@@ -84,7 +97,8 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @return load confirmation registry
 	 */
     @RequestMapping(value = "/payment/load", method = RequestMethod.POST)
-    public ResponseEntity<Object> loadPayment(@Validated @RequestBody LoadRequestDto load,
+    public ResponseEntity<Object> loadPayment(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+											  @Validated @RequestBody LoadRequestDto load,
                                                  BindingResult result, HttpServletRequest request) {
 		loadRequestValidator.validate(load, result);
 		ResponseEntity<Object> responseEntity = apiValidator(result);
@@ -93,13 +107,16 @@ public class ProxyEndpointController extends BaseRestController {
 		}
 
 		try {
+            validateKey(key);
             MeatadataBO metadata = getMetadata(request);
-            Load registry = businessManager.loadPayment(load, metadata);
+            Load registry = businessManager.loadPayment(load, metadata, key);
 			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, registry));
 		} catch (HttpClientErrorException ex) {
 			responseEntity = setErrorResponse(ex, request);
 		} catch (NoSuchAlgorithmException ex) {
 			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR), request);
+		} catch (ParseException e) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
 		}
 
 		return responseEntity;
@@ -114,16 +131,20 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @return List of banks allowed
 	 */
 	@RequestMapping(value = "/payment/cash/banks/{country}", method = RequestMethod.GET)
-	public ResponseEntity<Object> getBanks(@PathVariable("country") String country, HttpServletRequest request, HttpServletResponse response) {
+	public ResponseEntity<Object> getBanks(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+										   @PathVariable("country") String country, HttpServletRequest request, HttpServletResponse response) {
 
 		ResponseEntity<Object> responseEntity;
     	try {
-			List<com.payu.sdk.model.Bank> banks = businessManager.getBanks(Country.valueOf(country.toUpperCase()));
+            validateKey(key);
+    	    List<com.payu.sdk.model.Bank> banks = businessManager.getBanks(Country.valueOf(country.toUpperCase()), key);
 			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, banks));
 		} catch (HttpClientErrorException ex) {
 			responseEntity = setErrorResponse(ex, request);
 		} catch (IllegalArgumentException ex) {
 			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.NOT_FOUND), request);
+		} catch (ParseException e) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
 		}
 
 		return responseEntity;
@@ -137,11 +158,12 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @return service availability response
      */
     @RequestMapping(value = "/payment/ping", method = RequestMethod.GET)
-    public ResponseEntity<Object> ping(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Object> ping(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+                                       HttpServletRequest request, HttpServletResponse response) {
 
         ResponseEntity<Object> responseEntity;
         try {
-            boolean pingResponse = businessManager.ping();
+            boolean pingResponse = businessManager.ping(key);
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, pingResponse));
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
@@ -159,7 +181,8 @@ public class ProxyEndpointController extends BaseRestController {
      * @return payment response
      */
     @RequestMapping(value = "/payment/service/pay", method = RequestMethod.POST)
-    public ResponseEntity<Object> payService(@Validated @RequestBody PaymentDto payment,
+    public ResponseEntity<Object> payService(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+											 @Validated @RequestBody PaymentDto payment,
                                              BindingResult result, HttpServletRequest request) {
         paymentValidator.validate(payment, result);
         ResponseEntity<Object> responseEntity = apiValidator(result);
@@ -191,7 +214,8 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @return balance of given customer
      */
     @RequestMapping(value = "/payment/balance/{customerId}", method = RequestMethod.GET)
-    public ResponseEntity<Object> getBalance(@PathVariable("customerId") String customerId, HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<Object> getBalance(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+											 @PathVariable("customerId") String customerId, HttpServletRequest request, HttpServletResponse response) {
 
         ResponseEntity<Object> responseEntity;
         try {
@@ -213,7 +237,8 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @return all data related with the given service id
      */
     @RequestMapping(value = "/payment/service/{serviceId}", method = RequestMethod.GET)
-    public ResponseEntity<Object> getService(@PathVariable("serviceId") String serviceId, HttpServletRequest request,
+    public ResponseEntity<Object> getService(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+											 @PathVariable("serviceId") String serviceId, HttpServletRequest request,
 											 HttpServletResponse response) {
 
         ResponseEntity<Object> responseEntity;
@@ -246,6 +271,63 @@ public class ProxyEndpointController extends BaseRestController {
 
 		return responseEntity;
 	}
+
+    /**
+     * createClient method: Create a new client for use payments platform
+     *
+     * @author jmunoz
+     * @since 12/08/2018
+     * @return clientId json object
+     */
+    @RequestMapping(value = "/client", method = RequestMethod.POST)
+    public ResponseEntity<Object> createClient(@Validated @RequestBody ClientDto client,
+                                             BindingResult result, HttpServletRequest request) {
+        clientValidator.validate(client, result);
+        ResponseEntity<Object> responseEntity = apiValidator(result);
+        if (responseEntity != null) {
+            return responseEntity;
+        }
+
+        try {
+            String clientId = businessManager.createClient(client);
+            if (clientId.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_MODIFIED).body(createExistsResponse(
+                        ResponseKeyName.PAYMENT_RESPONSE,
+                        new HashMap<String, String>().put("message", "already exists")));
+            }
+            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.CLIENT_RESPONSE, clientId));
+        } catch (HttpClientErrorException ex) {
+            responseEntity = setErrorResponse(ex, request);
+        }
+
+        return responseEntity;
+    }
+
+    /**
+     * generateApiKey method: Generate a new valid client api key for use payments platform
+     *
+     * @author jmunoz
+     * @since 30/09/2018
+     * @return api key json object
+     */
+    @RequestMapping(value = "/client/generate-api-key", method = RequestMethod.POST)
+    public ResponseEntity<Object> generateApiKey(@Validated @RequestBody ApiKeyDto apiKey,
+                                               BindingResult result, HttpServletRequest request) {
+        apiKeyValidator.validate(apiKey, result);
+        ResponseEntity<Object> responseEntity = apiValidator(result);
+        if (responseEntity != null) {
+            return responseEntity;
+        }
+
+        try {
+            String key = businessManager.createApiKey(apiKey);
+            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.API_KEY_RESPONSE, key));
+        } catch (HttpClientErrorException ex) {
+            responseEntity = setErrorResponse(ex, request);
+        }
+
+        return responseEntity;
+    }
 
 	private ResponseEntity<Object> setErrorResponse(HttpClientErrorException ex, HttpServletRequest request) {
 		HashMap<String, Object> map = new HashMap<>();

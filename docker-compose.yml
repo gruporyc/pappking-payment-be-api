@@ -34,10 +34,10 @@ services:
     container_name: ppk-payment-api
 # Update this volume link with your own .war generated file
     volumes:
-      - /media/jhonnyquest/Data/pappking/pappking-payment-be-api/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
+      - ${PWD}/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
 # You should create your own env variables to setup your app
     env_file:
-      - /media/jhonnyquest/Data/pappking/payments.env
+      - payments.env
     restart: always
 # Database must be linked to the project to be sure that they are in the same docker network
     links:

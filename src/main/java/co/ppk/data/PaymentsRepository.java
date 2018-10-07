@@ -38,6 +38,7 @@ public class PaymentsRepository {
                 String insert = "INSERT INTO ppk_payments.loads " +
                         "(id, " +
                         "  customer_id," +
+                        "  client_id," +
                         "  amount," +
                         "  currency," +
                         "  payer_name," +
@@ -54,6 +55,7 @@ public class PaymentsRepository {
                         "VALUES " +
                         "('" + loadId + "', " +
                         "'" + load.getCustomerId() + "', " +
+                        "'" + load.getClientId() + "', " +
                         "'" + load.getAmount() + "', " +
                         "'" + load.getCurrency() + "', " +
                         "'" + load.getPayerName() + "', " +
@@ -93,6 +95,7 @@ public class PaymentsRepository {
             try {
                 String update = "UPDATE ppk_payments.loads " +
                         "SET customer_id = '" + load.getCustomerId() + "'," +
+                        "  client_id = '" + load.getClientId() + "'," +
                         "  amount = '" + load.getAmount() + "'," +
                         "  currency = '" + load.getCurrency() + "'," +
                         "  payer_name = '" + load.getPayerName() + "'," +
@@ -198,12 +201,12 @@ public class PaymentsRepository {
         }
     }
 
-    public List<Load> getLoadsByStatus(Status status) {
+    public List<Load> getLoadsByStatus(String status, String clientId) {
         QueryRunner run = new QueryRunner(ds);
         try {
             String query = "SELECT id, customer_id, amount, currency, payer_name, payer_card_last_digits, method, " +
                     "order_id, transaction_id, status, network_code, network_message, trazability_code, response_code, " +
-                    "country, create_date, update_date FROM ppk_payments.loads WHERE status = ?;";
+                    "country, create_date, update_date FROM ppk_payments.loads WHERE status = ? and client_id = ?;";
 
             List<Load> loads = run.query(query,
                     rs -> {
@@ -231,7 +234,7 @@ public class PaymentsRepository {
                             );
                         }
                         return newLoadsList;
-                    }, status.name());
+                    }, status, clientId);
             return loads;
         } catch (SQLException e) {
             throw new RuntimeException(e);

@@ -12,6 +12,7 @@ public class Constants {
 
 	public static final String LANGUAGE_HEADER = "language";
 	public static final String CLIENT_ID_HEADER = "x-client-id";
+	public static final String CURRENT_CLIENT_KEY_HEADER = "payment-client-key";
 
 	public static final String EMAIL_REQUEST_PARAM = "email";
 	public static final String PSSWRD_REQUEST_PARAM = "password";

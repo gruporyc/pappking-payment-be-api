@@ -1,15 +1,16 @@
 package co.ppk.service.impl;
 
-import co.ppk.domain.Balance;
-import co.ppk.domain.Load;
-import co.ppk.domain.Service;
+import co.ppk.data.ApiKeysRepository;
+import co.ppk.data.ClientsRepository;
+import co.ppk.domain.*;
+import co.ppk.dto.ApiKeyDto;
+import co.ppk.dto.ClientDto;
 import co.ppk.dto.LoadRequestDto;
 import co.ppk.dto.PaymentDto;
 import co.ppk.enums.*;
 import co.ppk.service.BusinessManager;
 import co.ppk.data.PaymentsRepository;
 import co.ppk.service.MeatadataBO;
-import co.ppk.utilities.PaymentsGatewaySingleton;
 import com.payu.sdk.PayU;
 import com.payu.sdk.PayUPayments;
 import com.payu.sdk.PayUReports;
@@ -18,14 +19,21 @@ import com.payu.sdk.exceptions.InvalidParametersException;
 import com.payu.sdk.exceptions.PayUException;
 import com.payu.sdk.model.TransactionResponse;
 import com.payu.sdk.model.TransactionState;
+import io.jsonwebtoken.JwtBuilder;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import org.apache.commons.lang.time.DateUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -34,20 +42,25 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static co.ppk.utilities.Constants.*;
+import static co.ppk.utilities.KeyHelper.loadGatewayKeys;
 import static java.lang.Integer.valueOf;
 
 @Component
 public class BussinessManagerImpl implements BusinessManager{
 
     private static PaymentsRepository paymentsRepository;
+    private static ApiKeysRepository apiKeysRepository;
+    private static ClientsRepository clientsRepository;
 
     public BussinessManagerImpl() {
         paymentsRepository = new PaymentsRepository();
+        apiKeysRepository = new ApiKeysRepository();
+        clientsRepository = new ClientsRepository();
     }
 
     @Override
-    public Load loadPayment(LoadRequestDto load, MeatadataBO metadata) throws NoSuchAlgorithmException {
-        PayU payU = PaymentsGatewaySingleton.getInstance();
+    public Load loadPayment(LoadRequestDto load, MeatadataBO metadata, String key) throws NoSuchAlgorithmException {
+        String clientId = loadGatewayKeys(key);
         Map<String, String> parameters = new HashMap<>();
         String load_id = UUID.randomUUID().toString();
         double amount = round(load.getAmount(), 2);
@@ -59,6 +72,7 @@ public class BussinessManagerImpl implements BusinessManager{
                 .setMethod(load.getMethod().name())
                 .setStatus(Status.INCOMPLETE.name())
                 .setCountry(load.getBuyer().getCountry().name())
+                .setClientId(clientId)
                 .build());
 
         Load.Builder builder = new Load.Builder()
@@ -68,7 +82,8 @@ public class BussinessManagerImpl implements BusinessManager{
                 .setMethod(load.getMethod().name())
                 .setStatus(Status.INCOMPLETE.name())
                 .setCountry(load.getBuyer().getCountry().name())
-                .setId(loadId);
+                .setId(loadId)
+                .setClientId(clientId);
 
 //Transaction data.
         parameters.put(PayU.PARAMETERS.ACCOUNT_ID, PAYMENT_ACCOUNT_ID);
@@ -208,13 +223,34 @@ public class BussinessManagerImpl implements BusinessManager{
 
         Load loadUpdated = builder.build();
         paymentsRepository.uppdateLoad(loadUpdated);
+        if(loadUpdated.getMethod().equals(PaymentMethod.PSE.name()) ||
+                loadUpdated.getMethod().equals(PaymentMethod.CASH_BALOTO.name()) ||
+                loadUpdated.getMethod().equals(PaymentMethod.CASH_EFECTY.name())) {
+            Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
+            clientsRepository.updateClientStatus(Status.PENDING.name(), apiKey.get().getClientId());
+        }
         return loadUpdated;
     }
 
+//    private String loadGatewayKeys(String key) {
+//        Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
+//        if (!apiKey.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
+//        Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());
+//        if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
+//
+//        PayU.paymentsUrl = PAYU_PAIMENTS_URL;
+//        PayU.reportsUrl = PAYU_REPORTS_URL;
+//        PayU.apiKey = client.get().getGatewayApiKey();
+//        PayU.apiLogin = client.get().getGatewayApiLogin();
+//        PayU.merchantId = client.get().getGatewayMerchantId();
+//        PayU.isTest = PAYU_IS_TEST;
+//        return client.get().getId();
+//    }
+
 
     @Override
-    public List<com.payu.sdk.model.Bank> getBanks(Country country) {
-        PaymentsGatewaySingleton.getInstance();
+    public List<com.payu.sdk.model.Bank> getBanks(Country country, String key) {
+        loadGatewayKeys(key);
         Map<String, String> parameters = new HashMap<>();
 
         parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, PaymentMethod.PSE.name());
@@ -239,43 +275,91 @@ public class BussinessManagerImpl implements BusinessManager{
 
     @Override
     public void checkPendingPayments() {
-        List<Load> pendingLoads = paymentsRepository.getLoadsByStatus(Status.PENDING);
-        if(pendingLoads.isEmpty()) {
+        List<Client> clients = clientsRepository.getClientsByStatus(Status.PENDING);
+        if(clients.isEmpty()) {
             System.out.println("No loads pending for conciliate.");
-        } else {
-            System.out.println("Loads pending for conciliate: " + pendingLoads.size());
         }
-        for (Load load: pendingLoads) {
-            try {
-                DateFormat dateFormat = new SimpleDateFormat(DATABASE_DATETIME_FORMAT);
-                Calendar loadDate = Calendar.getInstance();
-                loadDate.setTime(dateFormat.parse(load.getCreatedAt()));
-                loadDate.add(Calendar.HOUR, MAX_PENDING_TIME);
-                if(loadDate.getTime().before(new Date())) {
-                    paymentsRepository.updateLoadStatus(load.getId(), Status.DISMISSED);
-                    return;
-                }
+        if(clients.isEmpty()) { return; }
+
+        for (Client client : clients) {
+            List<Load> pendingLoads = paymentsRepository.getLoadsByStatus(Status.PENDING.name(), client.getId());
+            System.out.println("Loads pending to conciliate for client " + client.getId() + ": " + pendingLoads.size());
+            for (Load load: pendingLoads) {
+                try {
+                    DateFormat dateFormat = new SimpleDateFormat(DATABASE_DATETIME_FORMAT);
+                    Calendar loadDate = Calendar.getInstance();
+                    loadDate.setTime(dateFormat.parse(load.getCreatedAt()));
+                    loadDate.add(Calendar.HOUR, MAX_PENDING_TIME);
+                    if(loadDate.getTime().before(new Date())) {
+                        paymentsRepository.updateLoadStatus(load.getId(), Status.DISMISSED);
+                        continue;
+                    }
 
 // If status is APPROVED then update balance with new amount
-                Status status = checkOrder(load.getTransactionId());
-                if (Objects.isNull(status)) {
-                    return;
+                    Status status = checkOrder(load.getTransactionId(), client);
+                    if (Objects.isNull(status)) {
+                        continue;
+                    }
+                    if(status.name().equals(Status.APPROVED.name())) {
+                        paymentsRepository.updateBalance(load.getCustomerId(), round(load.getAmount(), 2));
+                        paymentsRepository.updateLoadStatus(load.getId(), Status.APPROVED);
+                    } else if (!status.equals(Status.PENDING)){
+                        paymentsRepository.updateLoadStatus(load.getId(), status);
+                    }
+                } catch (ParseException e) {
+                    e.printStackTrace();
                 }
-                if(status.name().equals(Status.APPROVED.name())) {
-                    paymentsRepository.updateBalance(load.getCustomerId(), round(load.getAmount(), 2));
-                    paymentsRepository.updateLoadStatus(load.getId(), Status.APPROVED);
-                } else if (!status.equals(Status.PENDING)){
-                    paymentsRepository.updateLoadStatus(load.getId(), status);
-                }
-            } catch (ParseException e) {
-                e.printStackTrace();
             }
         }
     }
 
-    public boolean ping() {
+    @Override
+    public String createClient(ClientDto client) {
+        return clientsRepository.createClient(new Client.Builder()
+                .setName(client.getName())
+                .setGatewayApiKey(client.getGatewayApiKey())
+                .setGatewayApiLogin(client.getGatewayApiLogin())
+                .setGatewayMerchantId(client.getGatewayMerchantId())
+                .setGatewayAccountId(client.getGatewayAccoutId())
+                .build()
+        );
+    }
+
+    @Override
+    public String createApiKey(ApiKeyDto apiKey) {
+        //TODO: generate token for API key
+        KeyGenerator keyGen = null;
         try {
-            PaymentsGatewaySingleton.getInstance();
+            keyGen = KeyGenerator.getInstance("AES");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+        keyGen.init(128);
+        SecretKey secretKey = keyGen.generateKey();
+
+        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS512;
+        long nowMillis = System.currentTimeMillis();
+        Date now = new Date(nowMillis);
+        Date expDate = DateUtils.addDays(now, apiKey.getValidity());
+        JwtBuilder builder = Jwts.builder()
+                .setId(apiKey.getClientId())
+                .setIssuedAt(now)
+                .setSubject("")
+                .signWith(signatureAlgorithm, secretKey)
+                .setExpiration(expDate);
+
+        //TODO: generate expiration date based on validity
+        //TODO: apply client status validation to throw exception if client have invalid status
+
+
+        String token = builder.compact();
+        apiKeysRepository.createApiKey(token, apiKey.getClientId(), new Timestamp(expDate.getTime()));
+        return token;
+    }
+
+    public boolean ping(String key) {
+        try {
+            loadGatewayKeys(key);
             return PayUPayments.doPing();
         } catch (PayUException e) {
             e.printStackTrace();
@@ -334,13 +418,18 @@ public class BussinessManagerImpl implements BusinessManager{
         return false;
     }
 
-    private Status checkOrder(String transactionId) {
+    private Status checkOrder(String transactionId, Client client) {
         Map<String, String> parameters = new HashMap<>();
         parameters.put(PayU.PARAMETERS.TRANSACTION_ID, transactionId);
         Status statusResponse = null;
 
         try {
-            PaymentsGatewaySingleton.getInstance();
+            PayU.paymentsUrl = PAYU_PAIMENTS_URL;
+            PayU.reportsUrl = PAYU_REPORTS_URL;
+            PayU.apiKey = client.getGatewayApiKey();
+            PayU.apiLogin = client.getGatewayApiLogin();
+            PayU.merchantId = client.getGatewayMerchantId();
+            PayU.isTest = PAYU_IS_TEST;
             TransactionResponse response = PayUReports.getTransactionResponse(parameters);
             statusResponse = Status.valueOf(response.getState().name());
         } catch (Exception e) {
