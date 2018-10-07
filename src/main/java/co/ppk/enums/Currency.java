@@ -3,5 +3,9 @@ package co.ppk.enums;
 public enum Currency {
     COP,
     MXN,
-    USD
+    USD,
+    PEN,
+    ARS,
+    BRL,
+    CLP
 }

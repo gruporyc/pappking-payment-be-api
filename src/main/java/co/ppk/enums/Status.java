@@ -8,5 +8,6 @@ public enum Status {
     ACTIVE,
     SUSPENDED,
     APPROVED,
-    DISMISSED;
+    DISMISSED,
+    EXPIRED
 }

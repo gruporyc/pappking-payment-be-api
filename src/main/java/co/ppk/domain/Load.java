@@ -4,7 +4,8 @@ public class Load {
 
     private final String id;
     private final String customerId;
-    private final float amount;
+    private final String clientId;
+    private final double amount;
     private final String currency;
     private final String payerName;
     private final String payerCardLastDigits;
@@ -25,7 +26,8 @@ public class Load {
 
     public Load(String id,
                    String customerId,
-                   float amount,
+                   String clientId,
+                   double amount,
                    String currency,
                    String payerName,
                    String payerCardLastDigits,
@@ -44,6 +46,7 @@ public class Load {
                    String updatedAt) {
         this.id = id;
         this.customerId = customerId;
+        this.clientId = clientId;
         this.amount = amount;
         this.currency = currency;
         this.payerName = payerName;
@@ -71,7 +74,11 @@ public class Load {
         return customerId;
     }
 
-    public float getAmount() {
+    public String getClientId() {
+        return clientId;
+    }
+
+    public double getAmount() {
         return amount;
     }
 
@@ -142,7 +149,8 @@ public class Load {
     public static class Builder {
         private String id;
         private String customerId;
-        private float amount;
+        private String clientId;
+        private double amount;
         private String currency;
         private String payerName;
         private String payerCardLastDigits;
@@ -170,7 +178,12 @@ public class Load {
             return this;
         }
 
-        public Load.Builder setAmount(float amount) {
+        public Load.Builder setClientId(String clientId) {
+            this.clientId = clientId;
+            return this;
+        }
+
+        public Load.Builder setAmount(double amount) {
             this.amount = amount;
             return this;
         }
@@ -256,7 +269,7 @@ public class Load {
         }
 
         public Load build() {
-            return new Load(id, customerId, amount, currency, payerName, payerCardLastDigits, method, orderId,
+            return new Load(id, customerId, clientId, amount, currency, payerName, payerCardLastDigits, method, orderId,
                     transactionId, status, networkCode, networkMessage, trazabilityCode, responseCode, bankUrl,
                     receiptUrl, country, createdAt, updatedAt);
         }

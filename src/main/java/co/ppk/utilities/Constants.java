@@ -12,6 +12,7 @@ public class Constants {
 
 	public static final String LANGUAGE_HEADER = "language";
 	public static final String CLIENT_ID_HEADER = "x-client-id";
+	public static final String CURRENT_CLIENT_KEY_HEADER = "payment-client-key";
 
 	public static final String EMAIL_REQUEST_PARAM = "email";
 	public static final String PSSWRD_REQUEST_PARAM = "password";
@@ -36,6 +37,24 @@ public class Constants {
 			!Objects.isNull(System.getenv("PAYMENTS_MAX_PENDING_HOURS")) ?
 					Integer.valueOf(System.getenv("PAYMENTS_MAX_PENDING_HOURS")) : null)
 			.orElse(48);
+
+	public static final String PAYU_PAIMENTS_URL = Optional.ofNullable(System.getenv("PAYMENTS_RESPONSE_URL"))
+			.orElse("https://sandbox.api.payulatam.com/payments-api/");
+
+	public static final String PAYU_REPORTS_URL = Optional.ofNullable(System.getenv("PAYMENTS_REPORTS_RESPONSE_URL"))
+			.orElse("https://sandbox.api.payulatam.com/reports-api/");
+
+	public static final String PAYU_API_KEY = Optional.ofNullable(System.getenv("PAYMENTS_API_KEY"))
+			.orElse("4Vj8eK4rloUd272L48hsrarnUA");
+
+	public static final String PAYU_API_LOGIN = Optional.ofNullable(System.getenv("PAYMENTS_API_LOGIN"))
+			.orElse("pRRXKOl8ikMmt9u");
+
+	public static final String PAYU_MERCHANT_ID = Optional.ofNullable(System.getenv("PAYMENTS_MERCHAN_ID"))
+			.orElse("508029");
+
+	public static final boolean PAYU_IS_TEST = Optional.ofNullable(Boolean.valueOf(System.getenv("PAYMENTS_TEST_PAYMENT")))
+			.orElse(false);
 
 	public static final String DATETIME_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 

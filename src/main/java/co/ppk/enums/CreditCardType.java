@@ -4,5 +4,7 @@ public enum CreditCardType {
     VISA,
     MASTERCARD,
     DINNERS,
-    CENCOSUD
+    AMEX,
+    CODENSA,
+    UNRECOGNIZED
 }

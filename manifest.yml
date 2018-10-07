@@ -1,0 +1,11 @@
+---
+applications:
+- name: ppk-payments
+  memory: 1024M
+  disk_quota: 2048M
+  instances: 1
+  random-route: true
+  buildpack: java_buildpack_offline
+  path: target/pappking.be.api.war
+  services:
+    - test-db-dev-01

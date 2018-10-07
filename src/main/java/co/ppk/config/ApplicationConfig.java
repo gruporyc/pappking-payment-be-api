@@ -26,11 +26,10 @@ import co.ppk.utilities.PropertyManagerApacheImpl;
 
 /***
  * Configuration class for Spring IOC
- * 
- * @Descripcion
+ *
  * @author jmunoz
  * 
- * @version 1.0
+ * @version 1.0.0
  */
 
 @Configuration
@@ -44,8 +43,6 @@ public class ApplicationConfig {
 	/** The log. */
 	private final Logger log = LoggerFactory.getLogger(ApplicationConfig.class);
 
-	private Properties properties;
-
 	/**
 	 * Gets the error properties. Create Beans to read error properties file. This
 	 * properties file is valid throughout of application . Known as name of
@@ -55,7 +52,7 @@ public class ApplicationConfig {
 	 */
 	@Bean(name = "errorProperties")
 	public Properties getErrorProperties() {
-		properties = null;
+		Properties properties = null;
 		try {
 			ClassPathResource resource = new ClassPathResource("/properties/errorCodes.properties");
 			properties = PropertiesLoaderUtils.loadProperties(resource);

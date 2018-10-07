@@ -26,13 +26,13 @@ import javax.validation.constraints.NotNull;
  */
 public class LoadRequestDto {
     @NotNull
-    private float amount;
+    private double amount;
     @NotNull
     private Currency currency;
     @NotNull
     private PersonDto buyer;
     @NotNull
-    private PersonDto payer;
+    private String description;
     @NotNull
     private PaymentMethod method;
     private CreditCardDto creditCard;
@@ -45,14 +45,14 @@ public class LoadRequestDto {
      * @return the payment request amount
      */
     @JsonProperty("amount")
-    public float getAmount() {
+    public double getAmount() {
         return amount;
     }
 
     /**
      * @param amount the payment request amount
      */
-    public void setAmount(float amount) {
+    public void setAmount(double amount) {
         this.amount = amount;
     }
 
@@ -87,18 +87,18 @@ public class LoadRequestDto {
     }
 
     /**
-     * @return the payment request payer
+     * @return the payment request description
      */
-    @JsonProperty("payer")
-    public PersonDto getPayer() {
-        return payer;
+    @JsonProperty("description")
+    public String getDescription() {
+        return description;
     }
 
     /**
-     * @param payer the payment request payer
+     * @param description the payment request description
      */
-    public void setPayer(PersonDto payer) {
-        this.payer = payer;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     /**
@@ -197,8 +197,8 @@ public class LoadRequestDto {
                 "amount=" + amount +
                 ", currency=" + currency +
                 ", buyer=" + buyer +
-                ", payer=" + payer +
                 ", method=" + method +
+                ", description=" + description +
                 ", creditCard=" + creditCard +
                 ", financialInstituteCode='" + financialInstituteCode + '\'' +
                 ", personType=" + personType +
