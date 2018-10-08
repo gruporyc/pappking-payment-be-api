@@ -2,11 +2,11 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>ca.ppk</groupId>
-	<artifactId>pappking-customer-be-api</artifactId>
+	<artifactId>pappking-ppayment-be-api</artifactId>
 	<version>0.0.1</version>
 	<packaging>war</packaging>
-	<name>PAPPKING CUSTOMER</name>
-	<description>Pappking project - Customer API</description>
+	<name>PAPPKING PAYMENTS</name>
+	<description>Pappking project - Payments API</description>
 
 	<!-- Inherit defaults from Spring Boot. -->
 	<parent>
@@ -118,6 +118,12 @@
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>8.0.11</version>
+        </dependency>
+        <dependency>
+            <groupId>com.wix</groupId>
+            <artifactId>wix-embedded-mysql</artifactId>
+            <version>4.2.0</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.payu</groupId>

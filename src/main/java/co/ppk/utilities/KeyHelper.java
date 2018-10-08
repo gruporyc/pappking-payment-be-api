@@ -2,6 +2,7 @@ package co.ppk.utilities;
 
 import co.ppk.data.ApiKeysRepository;
 import co.ppk.data.ClientsRepository;
+import co.ppk.data.DataSourceSingleton;
 import co.ppk.domain.ApiKey;
 import co.ppk.domain.Client;
 import co.ppk.enums.Status;
@@ -12,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
+import javax.websocket.Session;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -27,8 +29,8 @@ public class KeyHelper {
     private static final Logger LOGGER = LogManager.getLogger(ProxyEndpointController.class);
 
     public static void validateKey(String key) throws ParseException {
-        ApiKeysRepository apiKeysRepository = new ApiKeysRepository();
-        ClientsRepository clientsRepository = new ClientsRepository();
+        ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
+        ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
         Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
 
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -48,11 +50,13 @@ public class KeyHelper {
         Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());
         if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
 
+
+
     }
 
     public static String loadGatewayKeys(String key) {
-        ApiKeysRepository apiKeysRepository = new ApiKeysRepository();
-        ClientsRepository clientsRepository = new ClientsRepository();
+        ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
+        ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
         Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
         if (!apiKey.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
         Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());

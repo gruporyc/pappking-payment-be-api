@@ -2,6 +2,7 @@ package co.ppk.service.impl;
 
 import co.ppk.data.ApiKeysRepository;
 import co.ppk.data.ClientsRepository;
+import co.ppk.data.DataSourceSingleton;
 import co.ppk.domain.*;
 import co.ppk.dto.ApiKeyDto;
 import co.ppk.dto.ClientDto;
@@ -23,6 +24,8 @@ import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang.time.DateUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -48,14 +51,16 @@ import static java.lang.Integer.valueOf;
 @Component
 public class BussinessManagerImpl implements BusinessManager{
 
+    private static final Logger LOGGER = LogManager.getLogger(BussinessManagerImpl.class);
+
     private static PaymentsRepository paymentsRepository;
     private static ApiKeysRepository apiKeysRepository;
     private static ClientsRepository clientsRepository;
 
     public BussinessManagerImpl() {
-        paymentsRepository = new PaymentsRepository();
-        apiKeysRepository = new ApiKeysRepository();
-        clientsRepository = new ClientsRepository();
+        paymentsRepository = new PaymentsRepository(DataSourceSingleton.getInstance());
+        apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
+        clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
     }
 
     @Override
@@ -65,6 +70,7 @@ public class BussinessManagerImpl implements BusinessManager{
         String load_id = UUID.randomUUID().toString();
         double amount = round(load.getAmount(), 2);
 
+/* Create database temporal registry for a new load transaction*/
         String loadId = paymentsRepository.createLoad(new Load.Builder()
                 .setAmount(amount)
                 .setCurrency(load.getCurrency().name())
@@ -75,6 +81,7 @@ public class BussinessManagerImpl implements BusinessManager{
                 .setClientId(clientId)
                 .build());
 
+/* Create new load builder to update load with payment transaction result*/
         Load.Builder builder = new Load.Builder()
                 .setAmount(amount)
                 .setCurrency(load.getCurrency().name())
@@ -85,7 +92,7 @@ public class BussinessManagerImpl implements BusinessManager{
                 .setId(loadId)
                 .setClientId(clientId);
 
-//Transaction data.
+/* Transaction data. */
         parameters.put(PayU.PARAMETERS.ACCOUNT_ID, PAYMENT_ACCOUNT_ID);
         parameters.put(PayU.PARAMETERS.REFERENCE_CODE, load_id);
         parameters.put(PayU.PARAMETERS.DESCRIPTION, load.getDescription());
@@ -95,7 +102,7 @@ public class BussinessManagerImpl implements BusinessManager{
         parameters.put(PayU.PARAMETERS.COUNTRY, load.getBuyer().getCountry().name());
 
 
-// CASE: cash payment
+/* CASE: cash payment */
         if(load.getMethod().name().contains("CASH")) {
             DateFormat dateFormat = new SimpleDateFormat(DATETIME_FORMAT);
             Date currentDate = new Date();
@@ -115,15 +122,15 @@ public class BussinessManagerImpl implements BusinessManager{
             parameters.put(PayU.PARAMETERS.EXPIRATION_DATE,dateFormat.format(currentDatePlusOne));
         }
 
-// CASE: Transfer payment
+/* CASE: Transfer payment */
         if(load.getMethod().name().equals("PSE")) {
 
-// Payer data
+/* Payer data */
             parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getBuyer().getName());
             parameters.put(PayU.PARAMETERS.PAYER_EMAIL, load.getBuyer().getEmail());
             parameters.put(PayU.PARAMETERS.PAYER_CONTACT_PHONE, load.getBuyer().getPhone());
 
-//PSE data
+/* PSE data */
             parameters.put(PayU.PARAMETERS.PSE_FINANCIAL_INSTITUTION_CODE, load.getFinancialInstituteCode());
             parameters.put(PayU.PARAMETERS.PAYER_PERSON_TYPE, load.getPersonType().name());
             parameters.put(PayU.PARAMETERS.PAYER_DNI, load.getDni());
@@ -133,8 +140,9 @@ public class BussinessManagerImpl implements BusinessManager{
             parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, load.getMethod().name());
         }
 
+/* CASE: Credit card payment */
         if(load.getMethod().name().equals("CREDIT")) {
-// Buyer data
+/* Buyer data */
             parameters.put(PayU.PARAMETERS.BUYER_ID, load.getBuyer().getId());
             parameters.put(PayU.PARAMETERS.BUYER_NAME, load.getBuyer().getName());
             parameters.put(PayU.PARAMETERS.BUYER_EMAIL, load.getBuyer().getEmail());
@@ -175,7 +183,7 @@ public class BussinessManagerImpl implements BusinessManager{
                     .setPayerCardLastDigits(!Objects.isNull(load.getCreditCard().getNumber()) ? creditDigits : "");
         }
 
-// Transaction metadata.
+/* Transaction metadata. */
         MessageDigest mdEnc = MessageDigest.getInstance("MD5");
         String textToDigest = PAYU_API_KEY + "~" +
                 PAYU_MERCHANT_ID + "~" +
@@ -195,6 +203,7 @@ public class BussinessManagerImpl implements BusinessManager{
         parameters.put(PayU.PARAMETERS.COOKIE, metadata.getCookie());
         parameters.put(PayU.PARAMETERS.USER_AGENT, metadata.getUserAgent());
 
+/* Starting to get transaction response from payment gateway */
         TransactionResponse transactionResponse;
         try {
             transactionResponse = PayUPayments.doAuthorizationAndCapture(parameters);
@@ -222,7 +231,7 @@ public class BussinessManagerImpl implements BusinessManager{
         }
 
         Load loadUpdated = builder.build();
-        paymentsRepository.uppdateLoad(loadUpdated);
+        paymentsRepository.updateLoad(loadUpdated);
         if(loadUpdated.getMethod().equals(PaymentMethod.PSE.name()) ||
                 loadUpdated.getMethod().equals(PaymentMethod.CASH_BALOTO.name()) ||
                 loadUpdated.getMethod().equals(PaymentMethod.CASH_EFECTY.name())) {
@@ -231,22 +240,6 @@ public class BussinessManagerImpl implements BusinessManager{
         }
         return loadUpdated;
     }
-
-//    private String loadGatewayKeys(String key) {
-//        Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
-//        if (!apiKey.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
-//        Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());
-//        if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
-//
-//        PayU.paymentsUrl = PAYU_PAIMENTS_URL;
-//        PayU.reportsUrl = PAYU_REPORTS_URL;
-//        PayU.apiKey = client.get().getGatewayApiKey();
-//        PayU.apiLogin = client.get().getGatewayApiLogin();
-//        PayU.merchantId = client.get().getGatewayMerchantId();
-//        PayU.isTest = PAYU_IS_TEST;
-//        return client.get().getId();
-//    }
-
 
     @Override
     public List<com.payu.sdk.model.Bank> getBanks(Country country, String key) {
@@ -264,7 +257,6 @@ public class BussinessManagerImpl implements BusinessManager{
             throw new HttpClientErrorException(org.springframework.http.HttpStatus.METHOD_FAILURE); //420
         } catch (InvalidParametersException e) {
             e.printStackTrace();
-            String message = e.getMessage();
             throw new HttpClientErrorException(HttpStatus.NOT_ACCEPTABLE, e.getMessage()); //443
         } catch (ConnectionException e) {
             e.printStackTrace();
@@ -275,7 +267,7 @@ public class BussinessManagerImpl implements BusinessManager{
 
     @Override
     public void checkPendingPayments() {
-        List<Client> clients = clientsRepository.getClientsByStatus(Status.PENDING);
+        List<Client> clients = clientsRepository.getClientsByStatus(Status.PENDING.name());
         if(clients.isEmpty()) {
             System.out.println("No loads pending for conciliate.");
         }
@@ -291,7 +283,7 @@ public class BussinessManagerImpl implements BusinessManager{
                     loadDate.setTime(dateFormat.parse(load.getCreatedAt()));
                     loadDate.add(Calendar.HOUR, MAX_PENDING_TIME);
                     if(loadDate.getTime().before(new Date())) {
-                        paymentsRepository.updateLoadStatus(load.getId(), Status.DISMISSED);
+                        paymentsRepository.updateLoadStatus(load.getId(), load.getClientId(), Status.DISMISSED.name());
                         continue;
                     }
 
@@ -301,10 +293,10 @@ public class BussinessManagerImpl implements BusinessManager{
                         continue;
                     }
                     if(status.name().equals(Status.APPROVED.name())) {
-                        paymentsRepository.updateBalance(load.getCustomerId(), round(load.getAmount(), 2));
-                        paymentsRepository.updateLoadStatus(load.getId(), Status.APPROVED);
+                        paymentsRepository.updateBalance(load.getCustomerId(), load.getClientId(), round(load.getAmount(), 2));
+                        paymentsRepository.updateLoadStatus(load.getId(), load.getClientId(), Status.APPROVED.name());
                     } else if (!status.equals(Status.PENDING)){
-                        paymentsRepository.updateLoadStatus(load.getId(), status);
+                        paymentsRepository.updateLoadStatus(load.getId(), load.getClientId(), status.name());
                     }
                 } catch (ParseException e) {
                     e.printStackTrace();
@@ -370,11 +362,14 @@ public class BussinessManagerImpl implements BusinessManager{
         }
     }
 
-    public boolean payService(PaymentDto payment) {
-        if (isPayed(payment.getServiceId())) {
+    public boolean payService(PaymentDto payment, String key) {
+        String clientId = loadGatewayKeys(key);
+
+        if (isPayed(payment.getServiceId(), clientId)) {
             return false;
         }
-        Optional<Balance> balance = paymentsRepository.getBalance(payment.getCustomerId());
+
+        Optional<Balance> balance = paymentsRepository.getBalance(payment.getCustomerId(), clientId);
         if (!balance.isPresent()) {
             throw new HttpClientErrorException(HttpStatus.PRECONDITION_FAILED, "no balance present");
         }
@@ -385,20 +380,28 @@ public class BussinessManagerImpl implements BusinessManager{
             throw new HttpClientErrorException(HttpStatus.PRECONDITION_FAILED, "balance not active");
         }
 
-        paymentsRepository.createServicePayment(payment);
+        Service service = new Service.Builder()
+                .setAmount(payment.getAmount())
+                .setClientId(clientId)
+                .setServiceId(payment.getServiceId())
+                .setCustomerId(payment.getCustomerId())
+                .build();
+        paymentsRepository.createServicePayment(service);
         return true;
     }
 
-    public Balance getBalance(String customerId) {
-        Optional<Balance> balance = paymentsRepository.getBalance(customerId);
+    public Balance getBalance(String customerId, String key) {
+        String clientId = loadGatewayKeys(key);
+        Optional<Balance> balance = paymentsRepository.getBalance(customerId, clientId);
         if(!balance.isPresent()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
         }
         return balance.get();
     }
 
-    public Service getService(String serviceId) {
-        Optional<Service> service = paymentsRepository.getService(serviceId);
+    public Service getService(String serviceId, String key) {
+        String clientId = loadGatewayKeys(key);
+        Optional<Service> service = paymentsRepository.getServiceById(serviceId, clientId);
         if(!service.isPresent()) {
             throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
         }
@@ -410,9 +413,9 @@ public class BussinessManagerImpl implements BusinessManager{
                 .filter(ct -> ct != CreditCardType.UNRECOGNIZED).collect(Collectors.toList());
     }
 
-    private boolean isPayed(String serviceId) {
-        Optional<Service> service = paymentsRepository.getService(serviceId);
-        if (service.isPresent()) {
+    private boolean isPayed(String serviceId, String clientId) {
+        Optional<Service> service = paymentsRepository.getServiceById(serviceId, clientId);
+        if (service.isPresent() && service.get().getStatus().equals(Status.APPROVED.name())) {
             return true;
         }
         return false;
@@ -422,6 +425,8 @@ public class BussinessManagerImpl implements BusinessManager{
         Map<String, String> parameters = new HashMap<>();
         parameters.put(PayU.PARAMETERS.TRANSACTION_ID, transactionId);
         Status statusResponse = null;
+
+        LOGGER.info("Starting to check status for transaction: " + transactionId);
 
         try {
             PayU.paymentsUrl = PAYU_PAIMENTS_URL;

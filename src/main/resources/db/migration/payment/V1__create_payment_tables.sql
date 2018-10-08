@@ -1,6 +1,6 @@
 CREATE TABLE ppk_payments.clients (
   id varchar(36) PRIMARY KEY,
-  name varchar(36) NOT NULL,
+  name varchar(500) NOT NULL,
   status varchar(50) DEFAULT NULL,
   gateway_account_id varchar(10) DEFAULT NULL,
   gateway_merchant_id varchar(10) DEFAULT NULL,
@@ -13,7 +13,7 @@ CREATE TABLE ppk_payments.clients (
 CREATE INDEX payments_client_name ON ppk_payments.clients(name);
 
 CREATE TABLE ppk_payments.keys (
-  id varchar(2000) PRIMARY KEY,
+  id varchar(1024) PRIMARY KEY,
   client_id varchar(50) NOT NULL,
   status varchar(50) DEFAULT NULL,
   expiration_date TIMESTAMP,
@@ -53,10 +53,13 @@ CREATE INDEX payments_status ON ppk_payments.loads(status);
 CREATE TABLE ppk_payments.services (
   id varchar(36) PRIMARY KEY,
   service_id varchar(36) NOT NULL,
+  customer_id varchar(36) NOT NULL,
+  client_id varchar(36) NOT NULL,
   amount float NOT NULL,
   status varchar(50) DEFAULT NULL,
   create_date TIMESTAMP DEFAULT NOW(),
-  update_date TIMESTAMP DEFAULT NOW()
+  update_date TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (client_id) REFERENCES ppk_payments.clients (id)
 );
 
 CREATE INDEX payments_service_id ON ppk_payments.services(service_id);
@@ -65,10 +68,12 @@ CREATE INDEX payments_status ON ppk_payments.services(status);
 CREATE TABLE ppk_payments.balances (
   id varchar(36) PRIMARY KEY,
   customer_id varchar(36) NOT NULL,
+  client_id varchar(36) NOT NULL,
   balance float NOT NULL,
   status varchar(50) DEFAULT NULL,
   create_date TIMESTAMP DEFAULT NOW(),
-  update_date TIMESTAMP DEFAULT NOW()
+  update_date TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (client_id) REFERENCES ppk_payments.clients (id)
 );
 
 CREATE INDEX payments_customer_id ON ppk_payments.balances(customer_id);

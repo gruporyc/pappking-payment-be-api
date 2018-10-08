@@ -23,11 +23,11 @@ public interface BusinessManager {
 
     boolean ping(String key);
 
-    boolean payService(PaymentDto payment);
+    boolean payService(PaymentDto payment, String key);
 
-    Balance getBalance(String customerId);
+    Balance getBalance(String customerId, String key);
 
-    Service getService(String serviceId);
+    Service getService(String serviceId, String key);
 
     List<CreditCardType> getCreditCardTypes();
 

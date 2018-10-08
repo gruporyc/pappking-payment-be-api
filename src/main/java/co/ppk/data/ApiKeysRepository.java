@@ -17,8 +17,8 @@ import java.util.*;
 public class ApiKeysRepository {
     private final DataSource ds;
 
-    public ApiKeysRepository() {
-        this.ds = DataSourceSingleton.getInstance();
+    public ApiKeysRepository(DataSource ds) {
+        this.ds = ds;
     }
 
     public Optional<ApiKey> getApiKeyById(String id) {

@@ -43,7 +43,6 @@ import org.springframework.web.bind.annotation.*;
 import co.ppk.enums.ResponseKeyName;
 import org.springframework.web.client.HttpClientErrorException;
 
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -163,13 +162,16 @@ public class ProxyEndpointController extends BaseRestController {
 
         ResponseEntity<Object> responseEntity;
         try {
+			validateKey(key);
             boolean pingResponse = businessManager.ping(key);
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, pingResponse));
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
-        }
+        } catch (ParseException e) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+		}
 
-        return responseEntity;
+		return responseEntity;
     }
 
     /**
@@ -191,7 +193,8 @@ public class ProxyEndpointController extends BaseRestController {
         }
 
         try {
-            boolean paymentResponse = businessManager.payService(payment);
+			validateKey(key);
+        	boolean paymentResponse = businessManager.payService(payment, key);
             if (!paymentResponse) {
                 return ResponseEntity.status(HttpStatus.NOT_MODIFIED).body(createExistsResponse(
                         ResponseKeyName.PAYMENT_RESPONSE,
@@ -200,9 +203,11 @@ public class ProxyEndpointController extends BaseRestController {
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, paymentResponse));
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
-        }
+        } catch (ParseException e) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+		}
 
-        return responseEntity;
+		return responseEntity;
     }
 
     /**
@@ -219,17 +224,20 @@ public class ProxyEndpointController extends BaseRestController {
 
         ResponseEntity<Object> responseEntity;
         try {
-            Balance balance = businessManager.getBalance(customerId);
+			validateKey(key);
+            Balance balance = businessManager.getBalance(customerId, key);
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.BALANCE_RESPONSE, balance));
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
-        }
+        } catch (ParseException e) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+		}
 
-        return responseEntity;
+		return responseEntity;
     }
 
     /**
-     * getService method: get the service payment description
+     * getServiceById method: get the service payment description
      *
      * @param serviceId service universal identifier
      * @author jmunoz
@@ -243,13 +251,16 @@ public class ProxyEndpointController extends BaseRestController {
 
         ResponseEntity<Object> responseEntity;
         try {
-            Service service = businessManager.getService(serviceId);
+			validateKey(key);
+            Service service = businessManager.getService(serviceId, key);
             responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.SERVICE_RESPONSE, service));
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
-        }
+        } catch (ParseException e) {
+			responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+		}
 
-        return responseEntity;
+		return responseEntity;
     }
 
 	/**
@@ -260,7 +271,7 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @return allowed credit card types
 	 */
 	@RequestMapping(value = "/payment/credit-cards", method = RequestMethod.GET)
-	public ResponseEntity<Object> getService(HttpServletRequest request, HttpServletResponse response) {
+	public ResponseEntity<Object> getCredicardTypes(HttpServletRequest request, HttpServletResponse response) {
 		ResponseEntity<Object> responseEntity;
 		try {
 			List<CreditCardType> types = businessManager.getCreditCardTypes();

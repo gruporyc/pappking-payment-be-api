@@ -3,14 +3,16 @@ package co.ppk.domain;
 public class Balance {
     private final String id;
     private final String customerId;
+    private final String clientId;
     private final float balance;
     private final String status;
     private final String createdAt;
     private final String updatedAt;
 
-    public Balance(String id, String customerId, float balance, String status, String createdAt, String updatedAt) {
+    public Balance(String id, String customerId, String clientId, float balance, String status, String createdAt, String updatedAt) {
         this.id = id;
         this.customerId = customerId;
+        this.clientId = clientId;
         this.balance = balance;
         this.status = status;
         this.createdAt = createdAt;
@@ -23,6 +25,10 @@ public class Balance {
 
     public String getCustomerId() {
         return customerId;
+    }
+
+    public String getClientId() {
+        return clientId;
     }
 
     public float getBalance() {
@@ -44,6 +50,7 @@ public class Balance {
     public static class Builder {
         private String id;
         private String customerId;
+        private String clientId;
         private float balance;
         private String status;
         private String createdAt;
@@ -56,6 +63,11 @@ public class Balance {
 
         public Balance.Builder setCustomerId(String customerId) {
             this.customerId = customerId;
+            return this;
+        }
+
+        public Balance.Builder setClientId(String clientId) {
+            this.clientId = clientId;
             return this;
         }
 
@@ -80,7 +92,7 @@ public class Balance {
         }
 
         public Balance build() {
-            return new Balance(id, customerId, balance, status, createdAt, updatedAt);
+            return new Balance(id, customerId, clientId, balance, status, createdAt, updatedAt);
         }
     }
 

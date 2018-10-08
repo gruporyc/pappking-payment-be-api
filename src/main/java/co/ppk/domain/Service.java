@@ -3,14 +3,18 @@ package co.ppk.domain;
 public class Service {
     private final String id;
     private final String serviceId;
-    private final float amount;
+    private final String customerId;
+    private final String clientId;
+    private final double amount;
     private final String status;
     private final String createdAt;
     private final String updatedAt;
 
-    public Service(String id, String serviceId, float amount, String status, String createdAt, String updatedAt) {
+    public Service(String id, String serviceId, String customerId, String clientId, double amount, String status, String createdAt, String updatedAt) {
         this.id = id;
         this.serviceId = serviceId;
+        this.customerId = customerId;
+        this.clientId = clientId;
         this.amount = amount;
         this.status = status;
         this.createdAt = createdAt;
@@ -25,7 +29,15 @@ public class Service {
         return serviceId;
     }
 
-    public float getAmount() {
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public String getClientId() {
+        return clientId;
+    }
+
+    public double getAmount() {
         return amount;
     }
 
@@ -44,7 +56,9 @@ public class Service {
     public static class Builder {
         private String id;
         private String serviceId;
-        private float amount;
+        private String customerId;
+        private String clientId;
+        private double amount;
         private String status;
         private String createdAt;
         private String updatedAt;
@@ -59,7 +73,17 @@ public class Service {
             return this;
         }
 
-        public Service.Builder setAmount(float amount) {
+        public Service.Builder setCustomerId(String customerId) {
+            this.customerId = customerId;
+            return this;
+        }
+
+        public Service.Builder setClientId(String clientId) {
+            this.clientId = clientId;
+            return this;
+        }
+
+        public Service.Builder setAmount(double amount) {
             this.amount = amount;
             return this;
         }
@@ -80,7 +104,7 @@ public class Service {
         }
 
         public Service build() {
-            return new Service(id, serviceId, amount, status, createdAt, updatedAt);
+            return new Service(id, serviceId, customerId, clientId, amount, status, createdAt, updatedAt);
         }
     }
 }

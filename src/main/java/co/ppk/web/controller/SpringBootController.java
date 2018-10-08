@@ -42,30 +42,9 @@ public class SpringBootController {
      */
     public static void main(String[] args) throws Exception {
         System.setProperty("PPK_HOME", "/ppk");
-//        CheckPaymentsService payments = new CheckPaymentsService();
-//        payments.start();
         ApplicationContext ctx = SpringApplication.run(SpringBootController.class, args);
         Thread subscriber = new Thread(ctx.getBean(CheckPaymentsService.class));
         subscriber.start();
-//        Runnable runnable = new Runnable() {
-//            BusinessManager businessManager = new BussinessManagerImpl();
-//            public void run() {
-//                while (true) {
-//                    System.out.println("Starting to check pending payments...");
-//                    businessManager.checkPendingPayments();
-//                    try {
-//                        Thread.sleep(timeInterval);
-//                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-//                    }
-//                }
-//            }
-//        };
-
-
-
-//        Thread thread = new Thread(runnable);
-//        thread.start();
     }
 
 }
