@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -72,6 +73,29 @@ public class ApiKeysRepository {
                 DbUtils.close(conn);
             }
 
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void updateApiKeyStatus(String token, String status) {
+        try {
+            Connection conn = ds.getConnection();
+            conn.setAutoCommit(false);
+            Statement stmt = conn.createStatement();
+            try {
+                String update = "UPDATE ppk_payments.keys " +
+                        "SET status = '" + status + "' " +
+                        "WHERE " +
+                        "id = '" + token + "';";
+                stmt.executeUpdate(update);
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new RuntimeException(e);
+            } finally {
+                DbUtils.close(conn);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

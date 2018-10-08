@@ -3,6 +3,7 @@ package co.ppk.tests.repositories;
 import co.ppk.data.ApiKeysRepository;
 import co.ppk.data.ClientsRepository;
 import co.ppk.domain.ApiKey;
+import co.ppk.enums.Status;
 import co.ppk.service.BusinessManager;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.time.DateUtils;
@@ -63,5 +64,21 @@ public class ApiKeysRepositoryTest {
 
         assertTrue(apiKey.isPresent());
         assertEquals(token, apiKey.get().getId());
+    }
+
+    @Test
+    public void testUpdateApiKeyStatus() {
+        String clientId = clientsRepository.createClient(getRandomClient());
+        Date now = new Date();
+        Date expDate = DateUtils.addDays(now, 180);
+        String token = RandomStringUtils.randomAlphanumeric(1024);
+        apiKeysRepository.createApiKey(token, clientId, new Timestamp(expDate.getTime()));
+
+        apiKeysRepository.updateApiKeyStatus(token, Status.EXPIRED.name());
+
+        Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(token);
+
+        assertTrue(apiKey.isPresent());
+        assertEquals(Status.EXPIRED.name(), apiKey.get().getStatus());
     }
 }

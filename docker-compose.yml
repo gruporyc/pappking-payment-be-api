@@ -34,7 +34,7 @@ services:
     container_name: ppk-payment-api
 # Update this volume link with your own .war generated file
     volumes:
-      - ${PWD}/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
+      - ${PWD}/target/pappking.payment.be.api.war:/usr/local/tomcat/webapps/api.war
 # You should create your own env variables to setup your app
     env_file:
       - payments.env

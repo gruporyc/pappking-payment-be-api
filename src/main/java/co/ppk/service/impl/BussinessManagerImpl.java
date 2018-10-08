@@ -319,34 +319,36 @@ public class BussinessManagerImpl implements BusinessManager{
 
     @Override
     public String createApiKey(ApiKeyDto apiKey) {
-        //TODO: generate token for API key
-        KeyGenerator keyGen = null;
-        try {
-            keyGen = KeyGenerator.getInstance("AES");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+        if(!clientsRepository.getClientById(apiKey.getClientId()).get().getStatus().equals(Status.ACTIVE)) {
+            KeyGenerator keyGen = null;
+            try {
+                keyGen = KeyGenerator.getInstance("AES");
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            }
+            SecretKey secretKey = null;
+            if (keyGen != null) {
+                keyGen.init(128);
+                secretKey = keyGen.generateKey();
+            }
+
+            SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS512;
+            long nowMillis = System.currentTimeMillis();
+            Date now = new Date(nowMillis);
+            Date expDate = DateUtils.addDays(now, apiKey.getValidity());
+            JwtBuilder builder = Jwts.builder()
+                    .setId(apiKey.getClientId())
+                    .setIssuedAt(now)
+                    .setSubject("")
+                    .signWith(signatureAlgorithm, secretKey)
+                    .setExpiration(expDate);
+
+            String token = builder.compact();
+            apiKeysRepository.createApiKey(token, apiKey.getClientId(), new Timestamp(expDate.getTime()));
+            return token;
+        } else {
+            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED, "User status invalid");
         }
-        keyGen.init(128);
-        SecretKey secretKey = keyGen.generateKey();
-
-        SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS512;
-        long nowMillis = System.currentTimeMillis();
-        Date now = new Date(nowMillis);
-        Date expDate = DateUtils.addDays(now, apiKey.getValidity());
-        JwtBuilder builder = Jwts.builder()
-                .setId(apiKey.getClientId())
-                .setIssuedAt(now)
-                .setSubject("")
-                .signWith(signatureAlgorithm, secretKey)
-                .setExpiration(expDate);
-
-        //TODO: generate expiration date based on validity
-        //TODO: apply client status validation to throw exception if client have invalid status
-
-
-        String token = builder.compact();
-        apiKeysRepository.createApiKey(token, apiKey.getClientId(), new Timestamp(expDate.getTime()));
-        return token;
     }
 
     public boolean ping(String key) {

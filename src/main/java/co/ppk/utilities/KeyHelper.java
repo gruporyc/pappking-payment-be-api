@@ -13,7 +13,6 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 
-import javax.websocket.Session;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -26,32 +25,36 @@ import static co.ppk.utilities.Constants.PAYU_REPORTS_URL;
 
 public class KeyHelper {
 
+//    private static ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
+//    private static ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
     private static final Logger LOGGER = LogManager.getLogger(ProxyEndpointController.class);
 
     public static void validateKey(String key) throws ParseException {
+
         ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
         ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
         Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
 
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
+        Date expirationDate;
+        if (apiKey.isPresent()) {
+            expirationDate = format.parse(apiKey.get().getExpirationDate());
+        } else {
+            throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
+        }
 
-        Date expirationDate = format.parse(apiKey.get().getExpirationDate());
-
-        if (!apiKey.isPresent() || !apiKey.get().getStatus().equals(Status.ACTIVE)) {
+        if (!apiKey.get().getStatus().equals(Status.ACTIVE.name())) {
             throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
         }
 
         if (expirationDate.after(new Date())) {
             LOGGER.error("Payments key " + apiKey.get().getId() + " expired");
-
+            apiKeysRepository.updateApiKeyStatus(key, Status.EXPIRED.name());
             throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
         }
 
         Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());
         if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
-
-
-
     }
 
     public static String loadGatewayKeys(String key) {
