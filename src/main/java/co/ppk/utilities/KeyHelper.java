@@ -25,14 +25,12 @@ import static co.ppk.utilities.Constants.PAYU_REPORTS_URL;
 
 public class KeyHelper {
 
-//    private static ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
-//    private static ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
+    private static ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
+    private static ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
     private static final Logger LOGGER = LogManager.getLogger(ProxyEndpointController.class);
 
     public static void validateKey(String key) throws ParseException {
 
-        ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
-        ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
         Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
 
         DateFormat format = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
@@ -47,7 +45,12 @@ public class KeyHelper {
             throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
         }
 
-        if (expirationDate.after(new Date())) {
+        Date date = new Date();
+
+        long time = date.getTime();
+        long time1 = expirationDate.getTime();
+
+        if (time > time1) {
             LOGGER.error("Payments key " + apiKey.get().getId() + " expired");
             apiKeysRepository.updateApiKeyStatus(key, Status.EXPIRED.name());
             throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED);
@@ -58,8 +61,6 @@ public class KeyHelper {
     }
 
     public static String loadGatewayKeys(String key) {
-        ApiKeysRepository apiKeysRepository = new ApiKeysRepository(DataSourceSingleton.getInstance());
-        ClientsRepository clientsRepository = new ClientsRepository(DataSourceSingleton.getInstance());
         Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
         if (!apiKey.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
         Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());

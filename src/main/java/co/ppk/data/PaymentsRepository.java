@@ -7,7 +7,6 @@ import co.ppk.enums.Status;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -17,7 +16,6 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.*;
 
-@Component
 public class PaymentsRepository {
 
     private final DataSource ds;

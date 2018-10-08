@@ -12,12 +12,10 @@ package co.ppk.data;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
-import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.util.Optional;
 
-@Component
 public class DataSourceSingleton {
 
     private static DataSource instance = null;

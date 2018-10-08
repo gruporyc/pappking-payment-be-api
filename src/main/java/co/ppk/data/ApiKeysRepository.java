@@ -5,7 +5,6 @@ import co.ppk.enums.Status;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.dbutils.QueryRunner;
 import org.apache.commons.dbutils.handlers.ScalarHandler;
-import org.springframework.stereotype.Component;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -14,7 +13,6 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.*;
 
-@Component
 public class ApiKeysRepository {
     private final DataSource ds;
 
