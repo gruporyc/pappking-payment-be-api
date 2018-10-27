@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class PaymentDto {
     private String customerId;
     private String serviceId;
+    private Boolean operator;
     private float amount;
 
     /**
@@ -37,6 +38,21 @@ public class PaymentDto {
      */
     public void setCustomerId(String customerId) {
         this.customerId = customerId;
+    }
+
+    /**
+     * @return if is operator
+     */
+    @JsonProperty("operator")
+    public boolean isOperator() {
+        return operator;
+    }
+
+    /**
+     * @param operator if customer is operator
+     */
+    public void setOperator(boolean operator) {
+        this.operator = operator;
     }
 
     /**
@@ -73,6 +89,7 @@ public class PaymentDto {
     public String toString() {
         return "PaymentDto{" +
                 "customerId='" + customerId + '\'' +
+                ", operator='" + operator + '\'' +
                 ", serviceId='" + serviceId + '\'' +
                 ", amount=" + amount +
                 '}';

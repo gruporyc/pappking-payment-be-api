@@ -21,11 +21,11 @@ public class ApiKeysRepository {
         this.ds = DataSourceSingleton.getInstance();
     }
 
-    public Optional<ApiKey> getApiKeyById(String id) {
+    public Optional<ApiKey> getApiKeyByToken(String token) {
         QueryRunner run = new QueryRunner(ds);
         try {
-            String query = "SELECT id, client_id, status, expiration_date ,create_date, update_date " +
-                    "FROM ppk_payments.keys WHERE id = ?";
+            String query = "SELECT id, token, client_id, status, expiration_date ,create_date, update_date " +
+                    "FROM ppk_payments.keys WHERE token = ?";
 
             ApiKey apiKey = run.query(query,
                 rs -> {
@@ -36,13 +36,14 @@ public class ApiKeysRepository {
 
                     return new ApiKey.Builder()
                             .setId(rs.getString(1))
-                            .setClientId(rs.getString(2))
-                            .setStatus(rs.getString(3))
-                            .setExpirationDate(rs.getString(4))
-                            .setCreatedAt(rs.getString(5))
-                            .setUpdatedAt(rs.getString(6))
+                            .setToken(rs.getString(2))
+                            .setClientId(rs.getString(3))
+                            .setStatus(rs.getString(4))
+                            .setExpirationDate(rs.getString(5))
+                            .setCreatedAt(rs.getString(6))
+                            .setUpdatedAt(rs.getString(7))
                             .build();
-                }, id);
+                }, token);
             return Optional.ofNullable(apiKey);
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -55,11 +56,13 @@ public class ApiKeysRepository {
         try {
             Connection conn = ds.getConnection();
             conn.setAutoCommit(false);
+            String id = UUID.randomUUID().toString();
             try {
                 String insert = "INSERT INTO ppk_payments.keys " +
-                        "(id, client_id, status, expiration_date) " +
+                        "(id, token, client_id, status, expiration_date) " +
                         "VALUES " +
-                        "('" + token + "', " +
+                        "('" + id + "', " +
+                        "'" + token + "', " +
                         "'" + clientId + "', " +
                         "'" + Status.ACTIVE.name() + "', " +
                         "'" + expDate + "');";
