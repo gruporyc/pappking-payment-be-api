@@ -2,14 +2,16 @@ package co.ppk.domain;
 
 public class ApiKey {
     private final String id;
+    private final String token;
     private final String clientId;
     private final String expirationDate;
     private final String status;
     private final String createdAt;
     private final String updatedAt;
 
-    public ApiKey(String id, String clientId, String expirationDate, String status, String createdAt, String updatedAt) {
+    public ApiKey(String id, String token, String clientId, String expirationDate, String status, String createdAt, String updatedAt) {
         this.id = id;
+        this.token = token;
         this.clientId = clientId;
         this.expirationDate = expirationDate;
         this.status = status;
@@ -19,6 +21,10 @@ public class ApiKey {
 
     public String getId() {
         return id;
+    }
+
+    public String getToken() {
+        return token;
     }
 
     public String getClientId() {
@@ -43,6 +49,7 @@ public class ApiKey {
 
     public static class Builder {
         private String id;
+        private String token;
         private String clientId;
         private String expirationDate;
         private String status;
@@ -51,6 +58,11 @@ public class ApiKey {
 
         public ApiKey.Builder setId(String id) {
             this.id = id;
+            return this;
+        }
+
+        public ApiKey.Builder setToken(String token) {
+            this.token = token;
             return this;
         }
 
@@ -80,7 +92,7 @@ public class ApiKey {
         }
 
         public ApiKey build() {
-            return new ApiKey(id, clientId, expirationDate, status, createdAt, updatedAt);
+            return new ApiKey(id, token, clientId, expirationDate, status, createdAt, updatedAt);
         }
     }
 }

@@ -13,7 +13,8 @@ CREATE TABLE ppk_payments.clients (
 CREATE INDEX payments_client_name ON ppk_payments.clients(name);
 
 CREATE TABLE ppk_payments.keys (
-  id varchar(2000) PRIMARY KEY,
+  id varchar(36) PRIMARY KEY,
+  token varchar(2000) NOT NULL,
   client_id varchar(50) NOT NULL,
   status varchar(50) DEFAULT NULL,
   expiration_date TIMESTAMP,

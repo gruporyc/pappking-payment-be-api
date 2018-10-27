@@ -11,6 +11,7 @@ import co.ppk.enums.*;
 import co.ppk.service.BusinessManager;
 import co.ppk.data.PaymentsRepository;
 import co.ppk.service.MeatadataBO;
+import co.ppk.utilities.PropertyManager;
 import com.payu.sdk.PayU;
 import com.payu.sdk.PayUPayments;
 import com.payu.sdk.PayUReports;
@@ -23,6 +24,7 @@ import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.apache.commons.lang.time.DateUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -42,8 +44,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static co.ppk.utilities.Constants.*;
-import static co.ppk.utilities.KeyHelper.loadGatewayKeys;
-import static java.lang.Integer.valueOf;
 
 @Component
 public class BussinessManagerImpl implements BusinessManager{
@@ -52,10 +52,14 @@ public class BussinessManagerImpl implements BusinessManager{
     private static ApiKeysRepository apiKeysRepository;
     private static ClientsRepository clientsRepository;
 
-    public BussinessManagerImpl() {
+    @Autowired
+    private PropertyManager pm;
+
+    public BussinessManagerImpl(PropertyManager pm) {
         paymentsRepository = new PaymentsRepository();
         apiKeysRepository = new ApiKeysRepository();
         clientsRepository = new ClientsRepository();
+        this.pm = pm;
     }
 
     @Override
@@ -86,7 +90,7 @@ public class BussinessManagerImpl implements BusinessManager{
                 .setClientId(clientId);
 
 //Transaction data.
-        parameters.put(PayU.PARAMETERS.ACCOUNT_ID, PAYMENT_ACCOUNT_ID);
+        parameters.put(PayU.PARAMETERS.ACCOUNT_ID, pm.getProperty("PAYMENTS.ACCOUNT.ID"));
         parameters.put(PayU.PARAMETERS.REFERENCE_CODE, load_id);
         parameters.put(PayU.PARAMETERS.DESCRIPTION, load.getDescription());
         parameters.put(PayU.PARAMETERS.LANGUAGE, "Language.es");
@@ -101,13 +105,15 @@ public class BussinessManagerImpl implements BusinessManager{
             Date currentDate = new Date();
             Calendar c = Calendar.getInstance();
             c.setTime(currentDate);
-            c.add(Calendar.HOUR, MAX_PENDING_TIME);
+            c.add(Calendar.HOUR, Integer.valueOf(pm.getProperty("PAYMENTS.MAX.PENDING.HOURS")));
             Date currentDatePlusOne = c.getTime();
 
-            parameters.put(PayU.PARAMETERS.TAX_VALUE, ((valueOf(TAX_VALUE) / 100) > 0) ?
-                            String.valueOf((valueOf(TAX_VALUE) / 100) * load.getAmount()) : "0");
-            parameters.put(PayU.PARAMETERS.TAX_RETURN_BASE, ((valueOf(TAX_VALUE) / 100) > 0) ?
-                    String.valueOf(load.getAmount()/((valueOf(TAX_VALUE) / 100) + 1)) : "0");
+            double tax = Double.valueOf(pm.getProperty("PAYMENTS.TAX.VALUE")) / 100;
+            double returnBase = load.getAmount() / (tax + 1);
+            double taxAmount = tax * returnBase;
+
+            parameters.put(PayU.PARAMETERS.TAX_VALUE, String.valueOf(taxAmount));
+            parameters.put(PayU.PARAMETERS.TAX_RETURN_BASE, String.valueOf(returnBase));
             parameters.put(PayU.PARAMETERS.BUYER_EMAIL, load.getBuyer().getEmail());
             parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getBuyer().getName());
             parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, load.getMethod().name().replace("CASH_", ""));
@@ -128,7 +134,7 @@ public class BussinessManagerImpl implements BusinessManager{
             parameters.put(PayU.PARAMETERS.PAYER_PERSON_TYPE, load.getPersonType().name());
             parameters.put(PayU.PARAMETERS.PAYER_DNI, load.getDni());
             parameters.put(PayU.PARAMETERS.PAYER_DOCUMENT_TYPE, load.getDocumentType().name());
-            parameters.put(PayU.PARAMETERS.RESPONSE_URL, RESPONSE_URL);
+            parameters.put(PayU.PARAMETERS.RESPONSE_URL, pm.getProperty("PAYMENTS.RESPONSE.URL"));
 
             parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, load.getMethod().name());
         }
@@ -177,8 +183,8 @@ public class BussinessManagerImpl implements BusinessManager{
 
 // Transaction metadata.
         MessageDigest mdEnc = MessageDigest.getInstance("MD5");
-        String textToDigest = PAYU_API_KEY + "~" +
-                PAYU_MERCHANT_ID + "~" +
+        String textToDigest = pm.getProperty("PAYMENTS.API.KEY") + "~" +
+                pm.getProperty("PAYMENTS.MERCHAN.ID") + "~" +
                 load_id + "~" +
                 String.valueOf(amount) + "~" +
                 load.getCurrency().name();
@@ -226,7 +232,7 @@ public class BussinessManagerImpl implements BusinessManager{
         if(loadUpdated.getMethod().equals(PaymentMethod.PSE.name()) ||
                 loadUpdated.getMethod().equals(PaymentMethod.CASH_BALOTO.name()) ||
                 loadUpdated.getMethod().equals(PaymentMethod.CASH_EFECTY.name())) {
-            Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
+            Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyByToken(key);
             clientsRepository.updateClientStatus(Status.PENDING.name(), apiKey.get().getClientId());
         }
         return loadUpdated;
@@ -238,7 +244,7 @@ public class BussinessManagerImpl implements BusinessManager{
 //        Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());
 //        if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
 //
-//        PayU.paymentsUrl = PAYU_PAIMENTS_URL;
+//        PayU.paymentsUrl = PAYU_PAYMENTS_URL;
 //        PayU.reportsUrl = PAYU_REPORTS_URL;
 //        PayU.apiKey = client.get().getGatewayApiKey();
 //        PayU.apiLogin = client.get().getGatewayApiLogin();
@@ -275,7 +281,7 @@ public class BussinessManagerImpl implements BusinessManager{
 
     @Override
     public void checkPendingPayments() {
-        List<Client> clients = clientsRepository.getClientsByStatus(Status.PENDING);
+        List<Client> clients = clientsRepository.getClientsByStatus(Status.ACTIVE);
         if(clients.isEmpty()) {
             System.out.println("No loads pending for conciliate.");
         }
@@ -289,7 +295,7 @@ public class BussinessManagerImpl implements BusinessManager{
                     DateFormat dateFormat = new SimpleDateFormat(DATABASE_DATETIME_FORMAT);
                     Calendar loadDate = Calendar.getInstance();
                     loadDate.setTime(dateFormat.parse(load.getCreatedAt()));
-                    loadDate.add(Calendar.HOUR, MAX_PENDING_TIME);
+                    loadDate.add(Calendar.HOUR, Integer.valueOf(pm.getProperty("PAYMENTS.MAX.PENDING.HOURS")));
                     if(loadDate.getTime().before(new Date())) {
                         paymentsRepository.updateLoadStatus(load.getId(), Status.DISMISSED);
                         continue;
@@ -424,12 +430,12 @@ public class BussinessManagerImpl implements BusinessManager{
         Status statusResponse = null;
 
         try {
-            PayU.paymentsUrl = PAYU_PAIMENTS_URL;
-            PayU.reportsUrl = PAYU_REPORTS_URL;
+            PayU.paymentsUrl = pm.getProperty("PAYMENTS.API.URL");
+            PayU.reportsUrl = pm.getProperty("PAYMENTS.REPORTS.RESPONSE.URL");
             PayU.apiKey = client.getGatewayApiKey();
             PayU.apiLogin = client.getGatewayApiLogin();
             PayU.merchantId = client.getGatewayMerchantId();
-            PayU.isTest = PAYU_IS_TEST;
+            PayU.isTest = Boolean.valueOf(pm.getProperty("PAYMENTS.TEST.PAYMENT"));
             TransactionResponse response = PayUReports.getTransactionResponse(parameters);
             statusResponse = Status.valueOf(response.getState().name());
         } catch (Exception e) {
@@ -444,5 +450,22 @@ public class BussinessManagerImpl implements BusinessManager{
         BigDecimal bd = new BigDecimal(value);
         bd = bd.setScale(places, RoundingMode.HALF_UP);
         return bd.doubleValue();
+    }
+
+    private String loadGatewayKeys(String key) {
+        ApiKeysRepository apiKeysRepository = new ApiKeysRepository();
+        ClientsRepository clientsRepository = new ClientsRepository();
+        Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyByToken(key);
+        if (!apiKey.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
+        Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());
+        if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
+
+        PayU.paymentsUrl = pm.getProperty("PAYMENTS.API.URL");
+        PayU.reportsUrl = pm.getProperty("PAYMENTS.REPORTS.RESPONSE.URL");
+        PayU.apiKey = client.get().getGatewayApiKey();
+        PayU.apiLogin = client.get().getGatewayApiLogin();
+        PayU.merchantId = client.get().getGatewayMerchantId();
+        PayU.isTest = Boolean.valueOf(pm.getProperty("PAYMENTS.TEST.PAYMENT"));
+        return client.get().getId();
     }
 }
