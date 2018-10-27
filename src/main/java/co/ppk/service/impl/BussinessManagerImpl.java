@@ -238,22 +238,6 @@ public class BussinessManagerImpl implements BusinessManager{
         return loadUpdated;
     }
 
-//    private String loadGatewayKeys(String key) {
-//        Optional<ApiKey> apiKey = apiKeysRepository.getApiKeyById(key);
-//        if (!apiKey.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
-//        Optional<Client> client = clientsRepository.getClientById(apiKey.get().getClientId());
-//        if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
-//
-//        PayU.paymentsUrl = PAYU_PAYMENTS_URL;
-//        PayU.reportsUrl = PAYU_REPORTS_URL;
-//        PayU.apiKey = client.get().getGatewayApiKey();
-//        PayU.apiLogin = client.get().getGatewayApiLogin();
-//        PayU.merchantId = client.get().getGatewayMerchantId();
-//        PayU.isTest = PAYU_IS_TEST;
-//        return client.get().getId();
-//    }
-
-
     @Override
     public List<com.payu.sdk.model.Bank> getBanks(Country country, String key) {
         loadGatewayKeys(key);
@@ -270,7 +254,6 @@ public class BussinessManagerImpl implements BusinessManager{
             throw new HttpClientErrorException(org.springframework.http.HttpStatus.METHOD_FAILURE); //420
         } catch (InvalidParametersException e) {
             e.printStackTrace();
-            String message = e.getMessage();
             throw new HttpClientErrorException(HttpStatus.NOT_ACCEPTABLE, e.getMessage()); //443
         } catch (ConnectionException e) {
             e.printStackTrace();
@@ -333,7 +316,6 @@ public class BussinessManagerImpl implements BusinessManager{
 
     @Override
     public String createApiKey(ApiKeyDto apiKey) {
-        //TODO: generate token for API key
         KeyGenerator keyGen = null;
         try {
             keyGen = KeyGenerator.getInstance("AES");
@@ -353,10 +335,6 @@ public class BussinessManagerImpl implements BusinessManager{
                 .setSubject("")
                 .signWith(signatureAlgorithm, secretKey)
                 .setExpiration(expDate);
-
-        //TODO: generate expiration date based on validity
-        //TODO: apply client status validation to throw exception if client have invalid status
-
 
         String token = builder.compact();
         apiKeysRepository.createApiKey(token, apiKey.getClientId(), new Timestamp(expDate.getTime()));
@@ -384,7 +362,7 @@ public class BussinessManagerImpl implements BusinessManager{
         if (!balance.isPresent()) {
             throw new HttpClientErrorException(HttpStatus.PRECONDITION_FAILED, "no balance present");
         }
-        if(balance.get().getBalance() < payment.getAmount()) {
+        if(balance.get().getBalance() < payment.getAmount() && !payment.isOperator()) {
             throw new HttpClientErrorException(HttpStatus.PRECONDITION_FAILED, "balance insufficient");
         }
         if(!balance.get().getStatus().equals(Status.ACTIVE.name())) {
