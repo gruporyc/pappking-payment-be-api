@@ -195,9 +195,9 @@ public class ProxyEndpointController extends BaseRestController {
             if (!paymentResponse) {
                 return ResponseEntity.status(HttpStatus.NOT_MODIFIED).body(createExistsResponse(
                         ResponseKeyName.PAYMENT_RESPONSE,
-                        new HashMap<String, String>().put("message", "already exists")));
+                        new HashMap<String, String>().put("message"	, "already exists")));
             }
-            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, paymentResponse));
+            responseEntity =  ResponseEntity.ok(paymentResponse);
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
         }
@@ -220,7 +220,7 @@ public class ProxyEndpointController extends BaseRestController {
         ResponseEntity<Object> responseEntity;
         try {
             Balance balance = businessManager.getBalance(customerId);
-            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.BALANCE_RESPONSE, balance));
+            responseEntity =  ResponseEntity.ok(balance);
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
         }
@@ -244,7 +244,7 @@ public class ProxyEndpointController extends BaseRestController {
         ResponseEntity<Object> responseEntity;
         try {
             Service service = businessManager.getService(serviceId);
-            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.SERVICE_RESPONSE, service));
+            responseEntity =  ResponseEntity.ok(service);
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
         }
