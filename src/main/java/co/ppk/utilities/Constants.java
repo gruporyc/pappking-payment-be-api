@@ -13,6 +13,12 @@ public class Constants {
 
 	public static final String DATABASE_DATETIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
 
+	public static final String CREATE_CUSTOMER_SUCCESS = "Customer successfully created";
+
+    public static final String CREATE_CUSTOMER_EXISTS = "Customer already exists";
+
+    public static final String PAY_SERVICE_SUCCESS = "Service payment successfully created";
+
 	private Constants() {
 	}
 
