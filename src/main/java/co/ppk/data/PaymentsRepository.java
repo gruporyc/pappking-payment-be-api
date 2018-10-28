@@ -3,6 +3,7 @@ package co.ppk.data;
 import co.ppk.domain.Balance;
 import co.ppk.domain.Load;
 import co.ppk.domain.Service;
+import co.ppk.dto.CreateBalanceRequestDto;
 import co.ppk.dto.PaymentDto;
 import co.ppk.enums.Status;
 import org.apache.commons.dbutils.DbUtils;
@@ -85,7 +86,7 @@ public class PaymentsRepository {
         return loadId;
     }
 
-    public void uppdateLoad(Load load) {
+    public void updateLoad(Load load) {
         QueryRunner run = new QueryRunner(ds);
         Timestamp now = Timestamp.from(Instant.now());
         try {
@@ -177,8 +178,6 @@ public class PaymentsRepository {
     }
 
     public void updateLoadStatus(String loadId, Status status) {
-        QueryRunner run = new QueryRunner(ds);
-        Timestamp now = Timestamp.from(Instant.now());
         try {
             Connection conn = ds.getConnection();
             conn.setAutoCommit(false);
@@ -319,6 +318,33 @@ public class PaymentsRepository {
                                 .build();
                     }, customerId);
             return Optional.ofNullable(balance);
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void createBalance(CreateBalanceRequestDto balanceRequest) {
+        try {
+            Connection conn = ds.getConnection();
+            conn.setAutoCommit(false);
+            QueryRunner run = new QueryRunner(ds);
+            try {
+                conn.setAutoCommit(false);
+                String balanceId = UUID.randomUUID().toString();
+                run.insert(conn, "INSERT INTO ppk_payments.balances(id, " +
+                        "customer_id, " +
+                        "balance, " +
+                        "status) " +
+                        "VALUES('" + balanceId + "', '" + balanceRequest.getCustomerId() + "', " +
+                        balanceRequest.getBalance() + ", '" +
+                        balanceRequest.getStatus() + "');", new ScalarHandler<>());
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw new RuntimeException(e);
+            } finally {
+                DbUtils.close(conn);
+            }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

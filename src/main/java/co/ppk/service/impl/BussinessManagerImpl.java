@@ -3,10 +3,7 @@ package co.ppk.service.impl;
 import co.ppk.data.ApiKeysRepository;
 import co.ppk.data.ClientsRepository;
 import co.ppk.domain.*;
-import co.ppk.dto.ApiKeyDto;
-import co.ppk.dto.ClientDto;
-import co.ppk.dto.LoadRequestDto;
-import co.ppk.dto.PaymentDto;
+import co.ppk.dto.*;
 import co.ppk.enums.*;
 import co.ppk.service.BusinessManager;
 import co.ppk.data.PaymentsRepository;
@@ -65,6 +62,10 @@ public class BussinessManagerImpl implements BusinessManager{
     @Override
     public Load loadPayment(LoadRequestDto load, MeatadataBO metadata, String key) throws NoSuchAlgorithmException {
         String clientId = loadGatewayKeys(key);
+
+        if(!paymentsRepository.getBalance(load.getBuyer().getId()).isPresent()) {
+            throw new HttpClientErrorException(HttpStatus.NOT_FOUND, "User not found");
+        }
 
         Optional<Client> client = clientsRepository.getClientById(clientId);
         if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
@@ -232,7 +233,7 @@ public class BussinessManagerImpl implements BusinessManager{
         }
 
         Load loadUpdated = builder.build();
-        paymentsRepository.uppdateLoad(loadUpdated);
+        paymentsRepository.updateLoad(loadUpdated);
         if(loadUpdated.getMethod().equals(PaymentMethod.PSE.name()) ||
                 loadUpdated.getMethod().equals(PaymentMethod.CASH_BALOTO.name()) ||
                 loadUpdated.getMethod().equals(PaymentMethod.CASH_EFECTY.name())) {
@@ -345,6 +346,22 @@ public class BussinessManagerImpl implements BusinessManager{
         return token;
     }
 
+    @Override
+    public boolean createCustomerBalanceDto(CreateBalanceRequestDto balanceRequest) {
+        if(paymentsRepository.getBalance(balanceRequest.getCustomerId()).isPresent()) {
+            return false;
+        }
+        if(Objects.isNull(balanceRequest.getBalance())) {
+            balanceRequest.setBalance(0.0);
+        }
+        if(Objects.isNull(balanceRequest.getStatus()) || balanceRequest.getStatus().isEmpty()) {
+            balanceRequest.setStatus(Status.ACTIVE.name());
+        }
+        paymentsRepository.createBalance(balanceRequest);
+        return true;
+    }
+
+    @Override
     public boolean ping(String key) {
         try {
             loadGatewayKeys(key);
@@ -358,6 +375,7 @@ public class BussinessManagerImpl implements BusinessManager{
         }
     }
 
+    @Override
     public boolean payService(PaymentDto payment) {
         if (isPayed(payment.getServiceId())) {
             return false;
@@ -377,6 +395,7 @@ public class BussinessManagerImpl implements BusinessManager{
         return true;
     }
 
+    @Override
     public Balance getBalance(String customerId) {
         Optional<Balance> balance = paymentsRepository.getBalance(customerId);
         if(!balance.isPresent()) {
@@ -385,6 +404,7 @@ public class BussinessManagerImpl implements BusinessManager{
         return balance.get();
     }
 
+    @Override
     public Service getService(String serviceId) {
         Optional<Service> service = paymentsRepository.getService(serviceId);
         if(!service.isPresent()) {
@@ -393,6 +413,7 @@ public class BussinessManagerImpl implements BusinessManager{
         return service.get();
     }
 
+    @Override
     public List<CreditCardType> getCreditCardTypes() {
         return Stream.of(CreditCardType.values())
                 .filter(ct -> ct != CreditCardType.UNRECOGNIZED).collect(Collectors.toList());

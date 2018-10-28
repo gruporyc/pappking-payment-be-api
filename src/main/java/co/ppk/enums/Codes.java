@@ -2,9 +2,7 @@ package co.ppk.enums;
 
 public enum Codes {
 
-    IDENTIFICATION_CANNOT_BE_NULL("app.invalidFieldsDataError", "identification cannot be null"),
     BUYER_CANNOT_BE_NULL("app.invalidFieldsDataError", "buyer cannot be null"),
-    NAME_CANNOT_BE_NULL("app.invalidFieldsDataError", "name cannot be null"),
     AMOUNT_CANNOT_BE_NULL("app.invalidFieldsDataError", "amount cannot be null"),
     CURRENCY_CANNOT_BE_NULL("app.invalidFieldsDataError", "currency cannot be null"),
     METHOD_CANNOT_BE_NULL("app.invalidFieldsDataError", "payment method cannot be null"),
