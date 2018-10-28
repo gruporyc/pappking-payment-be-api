@@ -65,6 +65,10 @@ public class BussinessManagerImpl implements BusinessManager{
     @Override
     public Load loadPayment(LoadRequestDto load, MeatadataBO metadata, String key) throws NoSuchAlgorithmException {
         String clientId = loadGatewayKeys(key);
+
+        Optional<Client> client = clientsRepository.getClientById(clientId);
+        if (!client.isPresent()) { throw new HttpClientErrorException(HttpStatus.UNAUTHORIZED); }
+
         Map<String, String> parameters = new HashMap<>();
         String load_id = UUID.randomUUID().toString();
         double amount = round(load.getAmount(), 2);
@@ -90,7 +94,7 @@ public class BussinessManagerImpl implements BusinessManager{
                 .setClientId(clientId);
 
 //Transaction data.
-        parameters.put(PayU.PARAMETERS.ACCOUNT_ID, pm.getProperty("PAYMENTS.ACCOUNT.ID"));
+        parameters.put(PayU.PARAMETERS.ACCOUNT_ID, client.get().getGatewayAccountId());
         parameters.put(PayU.PARAMETERS.REFERENCE_CODE, load_id);
         parameters.put(PayU.PARAMETERS.DESCRIPTION, load.getDescription());
         parameters.put(PayU.PARAMETERS.LANGUAGE, "Language.es");
@@ -183,8 +187,8 @@ public class BussinessManagerImpl implements BusinessManager{
 
 // Transaction metadata.
         MessageDigest mdEnc = MessageDigest.getInstance("MD5");
-        String textToDigest = pm.getProperty("PAYMENTS.API.KEY") + "~" +
-                pm.getProperty("PAYMENTS.MERCHAN.ID") + "~" +
+        String textToDigest = client.get().getGatewayApiKey() + "~" +
+                client.get().getGatewayMerchantId() + "~" +
                 load_id + "~" +
                 String.valueOf(amount) + "~" +
                 load.getCurrency().name();
