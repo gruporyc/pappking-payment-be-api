@@ -3,7 +3,7 @@ package co.ppk.enums;
 public enum CreditCardType {
     VISA,
     MASTERCARD,
-    DINNERS,
+    DINERS,
     AMEX,
     CODENSA,
     UNRECOGNIZED
