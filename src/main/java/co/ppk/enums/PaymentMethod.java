@@ -5,5 +5,5 @@ public enum PaymentMethod {
     CASH_BALOTO,
     CASH_EFECTY,
     CREDIT,
-    VISA_DEBIT
+    UNRECOGNIZED
 }

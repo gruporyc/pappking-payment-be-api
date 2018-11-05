@@ -4,5 +4,8 @@ public enum Country {
     CO,
     US,
     MX,
-    MY
+    EC,
+    PE,
+    VE,
+    UNRECOGNIZED
 }

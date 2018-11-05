@@ -27,8 +27,6 @@ public class DataSourceSingleton {
     public static synchronized DataSource getInstance() {
         if (instance == null) {
             HikariConfig config = new HikariConfig();
-
-            //config.setDriverClassName("com.mysql.jdbc.Driver");
             config.setJdbcUrl(Optional.ofNullable(System.getenv("PAYMENTS_DB_URL"))
                     .orElse("jdbc:mysql://localhost:3306/ppk_payments"));
             config.setUsername(Optional.ofNullable(System.getenv("PAYMENTS_JDBC_USERNAME"))

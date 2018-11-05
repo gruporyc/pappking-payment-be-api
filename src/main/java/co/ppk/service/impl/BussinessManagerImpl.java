@@ -5,6 +5,7 @@ import co.ppk.data.ClientsRepository;
 import co.ppk.domain.*;
 import co.ppk.dto.*;
 import co.ppk.enums.*;
+import co.ppk.enums.Currency;
 import co.ppk.service.BusinessManager;
 import co.ppk.data.PaymentsRepository;
 import co.ppk.service.MeatadataBO;
@@ -117,8 +118,8 @@ public class BussinessManagerImpl implements BusinessManager{
             double returnBase = load.getAmount() / (tax + 1);
             double taxAmount = tax * returnBase;
 
-            parameters.put(PayU.PARAMETERS.TAX_VALUE, String.valueOf(taxAmount));
-            parameters.put(PayU.PARAMETERS.TAX_RETURN_BASE, String.valueOf(returnBase));
+            parameters.put(PayU.PARAMETERS.TAX_VALUE, String.valueOf(round(taxAmount,2)));
+            parameters.put(PayU.PARAMETERS.TAX_RETURN_BASE, String.valueOf(round(returnBase,2)));
             parameters.put(PayU.PARAMETERS.BUYER_EMAIL, load.getBuyer().getEmail());
             parameters.put(PayU.PARAMETERS.PAYER_NAME, load.getBuyer().getName());
             parameters.put(PayU.PARAMETERS.PAYMENT_METHOD, load.getMethod().name().replace("CASH_", ""));
@@ -423,6 +424,36 @@ public class BussinessManagerImpl implements BusinessManager{
     public List<CreditCardType> getCreditCardTypes() {
         return Stream.of(CreditCardType.values())
                 .filter(ct -> ct != CreditCardType.UNRECOGNIZED).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Country> getCountries() {
+        return Stream.of(Country.values())
+                .filter(c -> c != Country.UNRECOGNIZED).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PersonType> getPersonTypes() {
+        return Stream.of(PersonType.values())
+                .filter(pt -> pt != PersonType.UNRECOGNIZED).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<PaymentMethod> getPaymentMethods() {
+        return Stream.of(PaymentMethod.values())
+                .filter(pm -> pm != PaymentMethod.UNRECOGNIZED).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<DocumentType> getDocumentTypes() {
+        return Stream.of(DocumentType.values())
+                .filter(dt -> dt != DocumentType.UNRECOGNIZED).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Currency> getCurrencies() {
+        return Stream.of(Currency.values())
+                .filter(cu -> cu != Currency.UNRECOGNIZED).collect(Collectors.toList());
     }
 
     private boolean isPayed(String serviceId) {

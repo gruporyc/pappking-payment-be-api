@@ -282,7 +282,7 @@ public class PaymentsRepository {
                         "service_id, " +
                         "amount, " +
                         "status) " +
-                        "VALUES('" + id + "', '" + payment.getServiceId()+ "', " + payment.getAmount() + ", '" +
+                        "VALUES('" + id + "', '" + payment.getServiceId() + "', " + payment.getAmount() + ", '" +
                         Status.APPROVED.name() + "');", new ScalarHandler<>());
 
                 String updateBalance = "UPDATE ppk_payments.balances SET balance = balance - " + (payment.getAmount()) +
