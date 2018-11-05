@@ -19,8 +19,7 @@ import co.ppk.domain.Balance;
 import co.ppk.domain.Load;
 import co.ppk.domain.Service;
 import co.ppk.dto.*;
-import co.ppk.enums.Country;
-import co.ppk.enums.CreditCardType;
+import co.ppk.enums.*;
 import co.ppk.service.BusinessManager;
 import co.ppk.service.MeatadataBO;
 import co.ppk.validators.*;
@@ -34,7 +33,6 @@ import org.springframework.validation.BindingResult;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import co.ppk.enums.ResponseKeyName;
 import org.springframework.web.client.HttpClientErrorException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -106,7 +104,7 @@ public class ProxyEndpointController extends BaseRestController {
             validateKey(key);
             MeatadataBO metadata = getMetadata(request);
             Load registry = businessManager.loadPayment(load, metadata, key);
-			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, registry));
+			responseEntity =  ResponseEntity.ok(registry);
 		} catch (HttpClientErrorException ex) {
 			responseEntity = setErrorResponse(ex, request);
 		} catch (NoSuchAlgorithmException ex) {
@@ -134,7 +132,7 @@ public class ProxyEndpointController extends BaseRestController {
     	try {
             validateKey(key);
     	    List<com.payu.sdk.model.Bank> banks = businessManager.getBanks(Country.valueOf(country.toUpperCase()), key);
-			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, banks));
+			responseEntity =  ResponseEntity.ok(banks);
 		} catch (HttpClientErrorException ex) {
 			responseEntity = setErrorResponse(ex, request);
 		} catch (IllegalArgumentException ex) {
@@ -161,7 +159,7 @@ public class ProxyEndpointController extends BaseRestController {
         try {
             validateKey(key);
             boolean pingResponse = businessManager.ping(key);
-            responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.PAYMENT_RESPONSE, pingResponse));
+            responseEntity =  ResponseEntity.ok(pingResponse);
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
         } catch (ParseException e) {
@@ -268,14 +266,138 @@ public class ProxyEndpointController extends BaseRestController {
 	 * @return allowed credit card types
 	 */
 	@RequestMapping(value = "/payment/credit-cards", method = RequestMethod.GET)
-	public ResponseEntity<Object> getService(HttpServletRequest request, HttpServletResponse response) {
+	public ResponseEntity<Object> getCredicardTypes(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+                                                    HttpServletRequest request, HttpServletResponse response) {
 		ResponseEntity<Object> responseEntity;
 		try {
+            validateKey(key);
 			List<CreditCardType> types = businessManager.getCreditCardTypes();
-			responseEntity =  ResponseEntity.ok(createSuccessResponse(ResponseKeyName.SERVICE_RESPONSE, types));
+			responseEntity =  ResponseEntity.ok(types);
 		} catch (HttpClientErrorException ex) {
 			responseEntity = setErrorResponse(ex, request);
-		}
+		} catch (ParseException e) {
+            responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+        }
+
+		return responseEntity;
+	}
+
+	/**
+	 * getCountries method: get the list of allowed countries
+	 *
+	 * @author jmunoz
+	 * @since 05/11/2018
+	 * @return allowed countries codes
+	 */
+	@RequestMapping(value = "/payment/countries", method = RequestMethod.GET)
+	public ResponseEntity<Object> getService(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+                                             HttpServletRequest request, HttpServletResponse response) {
+		ResponseEntity<Object> responseEntity;
+		try {
+            validateKey(key);
+			List<Country> countries = businessManager.getCountries();
+			responseEntity =  ResponseEntity.ok(countries);
+		} catch (HttpClientErrorException ex) {
+			responseEntity = setErrorResponse(ex, request);
+		} catch (ParseException e) {
+            responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+        }
+
+		return responseEntity;
+	}
+
+	/**
+	 * getCurrencies method: get the list of allowed currencies
+	 *
+	 * @author jmunoz
+	 * @since 05/11/2018
+	 * @return allowed currencies codes
+	 */
+	@RequestMapping(value = "/payment/currencies", method = RequestMethod.GET)
+	public ResponseEntity<Object> getCurrencies(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+                                                HttpServletRequest request, HttpServletResponse response) {
+		ResponseEntity<Object> responseEntity;
+		try {
+            validateKey(key);
+			List<Currency> currencies = businessManager.getCurrencies();
+			responseEntity =  ResponseEntity.ok(currencies);
+		} catch (HttpClientErrorException ex) {
+			responseEntity = setErrorResponse(ex, request);
+		} catch (ParseException e) {
+            responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+        }
+
+		return responseEntity;
+	}
+
+	/**
+	 * getDocumentTypes method: get the list of allowed document types
+	 *
+	 * @author jmunoz
+	 * @since 05/11/2018
+	 * @return allowed document type codes
+	 */
+	@RequestMapping(value = "/payment/document-types", method = RequestMethod.GET)
+	public ResponseEntity<Object> getDocumentTypes(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+                                                   HttpServletRequest request, HttpServletResponse response) {
+		ResponseEntity<Object> responseEntity;
+		try {
+            validateKey(key);
+			List<DocumentType> documentTypes = businessManager.getDocumentTypes();
+			responseEntity =  ResponseEntity.ok(documentTypes);
+		} catch (HttpClientErrorException ex) {
+			responseEntity = setErrorResponse(ex, request);
+		} catch (ParseException e) {
+            responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+        }
+
+		return responseEntity;
+	}
+
+	/**
+	 * getPaymentMethods method: get the list of allowed payment methods
+	 *
+	 * @author jmunoz
+	 * @since 05/11/2018
+	 * @return allowed payment methods
+	 */
+	@RequestMapping(value = "/payment/payment-methods", method = RequestMethod.GET)
+	public ResponseEntity<Object> getPaymentMethods(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+                                                    HttpServletRequest request, HttpServletResponse response) {
+		ResponseEntity<Object> responseEntity;
+		try {
+            validateKey(key);
+			List<PaymentMethod> paymentMethods = businessManager.getPaymentMethods();
+			responseEntity =  ResponseEntity.ok(paymentMethods);
+		} catch (HttpClientErrorException ex) {
+			responseEntity = setErrorResponse(ex, request);
+		} catch (ParseException e) {
+            responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+        }
+
+		return responseEntity;
+	}
+
+	/**
+	 * getPersonTypes method: get the list of allowed person types
+	 *
+	 * @author jmunoz
+	 * @since 05/11/2018
+	 * @return allowed person types
+	 */
+	@RequestMapping(value = "/payment/person-types", method = RequestMethod.GET)
+	public ResponseEntity<Object> getPersonTypes(@RequestHeader(required = false, value = CURRENT_CLIENT_KEY_HEADER) String key,
+                                                 HttpServletRequest request, HttpServletResponse response) {
+		ResponseEntity<Object> responseEntity;
+		try {
+            validateKey(key);
+			List<PersonType> personTypes = businessManager.getPersonTypes();
+			responseEntity =  ResponseEntity.ok(personTypes);
+		} catch (HttpClientErrorException ex) {
+			responseEntity = setErrorResponse(ex, request);
+		} catch (ParseException e) {
+            responseEntity = setErrorResponse(new HttpClientErrorException(HttpStatus.UNAUTHORIZED), request);
+        }
 
 		return responseEntity;
 	}

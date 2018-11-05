@@ -10,5 +10,6 @@ public enum DocumentType {
     CEL, //	En caso de identificarse a través de la línea del móvil.
     RC,  //	Registro civil de nacimiento.
     DE,  // Documento de identificación extranjero.
+    UNRECOGNIZED
 
 }

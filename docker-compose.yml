@@ -12,7 +12,8 @@ services:
 ##################################################################################################################
 ############################################ Database container ##################################################
   db:
-    image: mysql:5.7
+    image: mysql:8.0.11
+    command: --default-authentication-plugin=mysql_native_password
     container_name: ppk-mysql
     volumes:
 # If you have some data and structure already built, then you can add to mysql data volume, if not then keep this
@@ -20,32 +21,37 @@ services:
     - db_data:/var/lib/mysql
     restart: always
 # Update DB environment variables with your own values
-    environment:
-      MYSQL_ROOT_PASSWORD: ppkpayments
-      MYSQL_DATABASE: ppk_payments
-      MYSQL_USER: ppkpaymentsuser
-      MYSQL_PASSWORD: ppkpayments
+    env_file:
+      - payments.env
+    ports:
+    - "3306:3306"
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+    - "9090:8080"
 
 ##################################################################################################################
 ############################################ Application container ################################################
-  ppk-payment-api:
-    image: tomcat:8
-# Update container name with your own project proper container name (project-service-type)
-    container_name: ppk-payment-api
-# Update this volume link with your own .war generated file
-    volumes:
-      - ${PWD}/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
-# You should create your own env variables to setup your app
-    env_file:
-      - payments.env
-    restart: always
-# Database must be linked to the project to be sure that they are in the same docker network
-    links:
-      - db
-    depends_on:
-      - db
-# You must be sure that each application is dispatched by a different port to avoid service crash
-    ports:
-      - 8091:8080
+#  ppk-payment-api:
+#    image: tomcat:8
+## Update container name with your own project proper container name (project-service-type)
+#    container_name: ppk-payment-api
+## Update this volume link with your own .war generated file
+#    volumes:
+#      - ${PWD}/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
+## You should create your own env variables to setup your app
+#    env_file:
+#      - payments.env
+#    restart: always
+## Database must be linked to the project to be sure that they are in the same docker network
+#    links:
+#      - db
+#    depends_on:
+#      - db
+## You must be sure that each application is dispatched by a different port to avoid service crash
+#    ports:
+#      - 8091:8080
 volumes:
   db_data:

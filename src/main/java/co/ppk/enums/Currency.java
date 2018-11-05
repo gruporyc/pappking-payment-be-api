@@ -7,5 +7,6 @@ public enum Currency {
     PEN,
     ARS,
     BRL,
-    CLP
+    CLP,
+    UNRECOGNIZED
 }

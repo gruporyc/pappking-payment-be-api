@@ -4,8 +4,7 @@ import co.ppk.domain.Balance;
 import co.ppk.domain.Load;
 import co.ppk.domain.Service;
 import co.ppk.dto.*;
-import co.ppk.enums.Country;
-import co.ppk.enums.CreditCardType;
+import co.ppk.enums.*;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
@@ -33,4 +32,14 @@ public interface BusinessManager {
     String createClient(ClientDto client);
 
     String createApiKey(ApiKeyDto apiKey);
+
+    List<Country> getCountries();
+
+    List<PersonType> getPersonTypes();
+
+    List<PaymentMethod> getPaymentMethods();
+
+    List<DocumentType> getDocumentTypes();
+
+    List<Currency> getCurrencies();
 }
