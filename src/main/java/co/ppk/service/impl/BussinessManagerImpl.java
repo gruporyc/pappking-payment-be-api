@@ -406,15 +406,21 @@ public class BussinessManagerImpl implements BusinessManager{
     }
 
     @Override
-    public Service getService(String serviceId) {
+    public PaymentServiceDto getService(String serviceId) {
         Optional<Service> service = paymentsRepository.getService(serviceId);
+        PaymentServiceDto response = new PaymentServiceDto();
         if(!service.isPresent()) {
-            throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+            //throw new HttpClientErrorException(HttpStatus.NOT_FOUND);
+            return response;
         }
-        return service.get();
+        response.setId(service.get().getId());
+        response.setServiceId(service.get().getServiceId());
+        response.setAmount(service.get().getAmount());
+        response.setStatus(service.get().getStatus());
+        return response;
     }
 
-    @Override
+        @Override
     public List<CreditCardType> getCreditCardTypes() {
         return Stream.of(CreditCardType.values())
                 .filter(ct -> ct != CreditCardType.UNRECOGNIZED).collect(Collectors.toList());

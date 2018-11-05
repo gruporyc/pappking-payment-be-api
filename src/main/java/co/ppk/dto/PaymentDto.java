@@ -28,7 +28,7 @@ public class PaymentDto {
     /**
      * @return the payment customer id
      */
-    @JsonProperty("customer_id")
+    @JsonProperty("customerId")
     public String getCustomerId() {
         return customerId;
     }
@@ -58,7 +58,7 @@ public class PaymentDto {
     /**
      * @return the service id
      */
-    @JsonProperty("service_id")
+    @JsonProperty("serviceId")
     public String getServiceId() {
         return serviceId;
     }

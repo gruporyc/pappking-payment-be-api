@@ -22,15 +22,15 @@ public class PaymentValidator extends BaseValidator implements Validator {
 
         PaymentDto payment = (PaymentDto) target;
         if (Objects.isNull(payment.getServiceId()) || StringUtils.isEmpty(payment.getServiceId())) {
-            errors.rejectValue("service_id", Codes.SERVICE_ID_CANNOT_BE_NULL.getErrorCode());
+            errors.rejectValue("serviceId", Codes.SERVICE_ID_CANNOT_BE_NULL.getErrorCode());
         }
 
         if (Objects.isNull(payment.getCustomerId()) || StringUtils.isEmpty(payment.getCustomerId())) {
-            errors.rejectValue("service_id", Codes.CUSTOMER_ID_CANNOT_BE_NULL.getErrorCode());
+            errors.rejectValue("serviceId", Codes.CUSTOMER_ID_CANNOT_BE_NULL.getErrorCode());
         }
 
         if (Objects.isNull(payment.getAmount()) || payment.getAmount() <= 0) {
-            errors.rejectValue("service_id", Codes.AMOUNT_CANNOT_BE_NULL.getErrorCode());
+            errors.rejectValue("serviceId", Codes.AMOUNT_CANNOT_BE_NULL.getErrorCode());
         }
     }
 
