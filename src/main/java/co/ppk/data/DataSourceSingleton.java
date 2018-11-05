@@ -28,13 +28,13 @@ public class DataSourceSingleton {
         if (instance == null) {
             HikariConfig config = new HikariConfig();
 
-            config.setDriverClassName("com.mysql.jdbc.Driver");
+            //config.setDriverClassName("com.mysql.jdbc.Driver");
             config.setJdbcUrl(Optional.ofNullable(System.getenv("PAYMENTS_DB_URL"))
-                    .orElse("jdbc:mysql://172.21.0.2:3306/ppk_payments"));
+                    .orElse("jdbc:mysql://localhost:3306/ppk_payments"));
             config.setUsername(Optional.ofNullable(System.getenv("PAYMENTS_JDBC_USERNAME"))
-                    .orElse("ppkpaymentsuser"));
+                    .orElse("root"));
             config.setPassword(Optional.ofNullable(System.getenv("PAYMENTS_JDBC_PASSWORD"))
-                    .orElse("ppkpayments"));
+                    .orElse(""));
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");

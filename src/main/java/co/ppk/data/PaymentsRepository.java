@@ -240,27 +240,30 @@ public class PaymentsRepository {
         }
     }
 
+
+
+
     public Optional<Service> getService(String serviceId) {
         QueryRunner run = new QueryRunner(ds);
         try {
             String query = "SELECT id, service_id, amount, status, create_date, update_date FROM ppk_payments.services WHERE service_id = ?;";
-
-            Service service = run.query(query,
-                    rs -> {
+            Optional<Service> service = run.query(query,
+                        rs -> {
                         if(!rs.next()){
-                            return null;
+                            Optional<Object> empty = Optional.empty();
+                            return Optional.empty();
                         }
                         rs.last();
-                        return new Service.Builder()
+                        return Optional.ofNullable(new Service.Builder()
                                 .setId(rs.getString(1))
                                 .setServiceId(rs.getString(2))
                                 .setAmount(rs.getFloat(3))
                                 .setStatus(rs.getString(4))
                                 .setCreatedAt(rs.getString(5))
                                 .setUpdatedAt(rs.getString(6))
-                                .build();
+                                .build());
                         }, serviceId);
-            return Optional.ofNullable(service);
+            return service;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
@@ -279,7 +282,7 @@ public class PaymentsRepository {
                         "service_id, " +
                         "amount, " +
                         "status) " +
-                        "VALUES('" + id + "', '" + payment.getCustomerId() + "', " + payment.getAmount() + ", '" +
+                        "VALUES('" + id + "', '" + payment.getServiceId()+ "', " + payment.getAmount() + ", '" +
                         Status.APPROVED.name() + "');", new ScalarHandler<>());
 
                 String updateBalance = "UPDATE ppk_payments.balances SET balance = balance - " + (payment.getAmount()) +

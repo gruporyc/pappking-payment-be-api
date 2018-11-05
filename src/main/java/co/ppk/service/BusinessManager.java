@@ -26,7 +26,7 @@ public interface BusinessManager {
 
     Balance getBalance(String customerId);
 
-    Service getService(String serviceId);
+    PaymentServiceDto getService(String serviceId);
 
     List<CreditCardType> getCreditCardTypes();
 
