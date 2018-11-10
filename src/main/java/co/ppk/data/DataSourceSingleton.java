@@ -30,9 +30,9 @@ public class DataSourceSingleton {
             config.setJdbcUrl(Optional.ofNullable(System.getenv("PAYMENTS_DB_URL"))
                     .orElse("jdbc:mysql://localhost:3306/ppk_payments"));
             config.setUsername(Optional.ofNullable(System.getenv("PAYMENTS_JDBC_USERNAME"))
-                    .orElse("root"));
+                    .orElse("ppkpaymentsuser"));
             config.setPassword(Optional.ofNullable(System.getenv("PAYMENTS_JDBC_PASSWORD"))
-                    .orElse(""));
+                    .orElse("ppkpayments"));
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");

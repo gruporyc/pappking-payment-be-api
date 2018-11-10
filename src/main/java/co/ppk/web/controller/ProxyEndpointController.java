@@ -247,8 +247,8 @@ public class ProxyEndpointController extends BaseRestController {
         ResponseEntity<Object> responseEntity;
         try {
             validateKey(key);
-            Service service = businessManager.getService(serviceId);
-            responseEntity =  ResponseEntity.ok(service);
+			PaymentServiceDto service = businessManager.getService(serviceId);
+			responseEntity =  ResponseEntity.ok(service);
         } catch (HttpClientErrorException ex) {
             responseEntity = setErrorResponse(ex, request);
         } catch (ParseException e) {
