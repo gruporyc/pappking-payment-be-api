@@ -15,8 +15,6 @@ public interface BusinessManager {
 
     List<com.payu.sdk.model.Bank> getBanks(Country country, String key);
 
-    void checkPendingPayments();
-
     boolean createCustomerBalanceDto(CreateBalanceRequestDto balanceRequest);
 
     boolean ping(String key);

@@ -9,10 +9,8 @@
  ******************************************************************/
 package co.ppk.web.controller;
 
-import co.ppk.service.CheckPaymentsService;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 
 import co.ppk.config.ApplicationConfig;
@@ -34,9 +32,7 @@ public class SpringBootController {
      */
     public static void main(String[] args) {
         System.setProperty("PPK_HOME", "/ppk");
-        ApplicationContext ctx = SpringApplication.run(SpringBootController.class, args);
-        Thread subscriber = new Thread(ctx.getBean(CheckPaymentsService.class));
-        subscriber.start();
+        SpringApplication.run(SpringBootController.class, args);
     }
 
 }

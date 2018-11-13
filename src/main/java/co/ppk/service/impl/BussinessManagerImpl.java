@@ -12,7 +12,6 @@ import co.ppk.service.MeatadataBO;
 import co.ppk.utilities.PropertyManager;
 import com.payu.sdk.PayU;
 import com.payu.sdk.PayUPayments;
-import com.payu.sdk.PayUReports;
 import com.payu.sdk.exceptions.ConnectionException;
 import com.payu.sdk.exceptions.InvalidParametersException;
 import com.payu.sdk.exceptions.PayUException;
@@ -35,7 +34,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -269,46 +267,6 @@ public class BussinessManagerImpl implements BusinessManager{
     }
 
     @Override
-    public void checkPendingPayments() {
-        List<Client> clients = clientsRepository.getClientsByStatus(Status.ACTIVE);
-        if(clients.isEmpty()) {
-            System.out.println("No loads pending for conciliate.");
-        }
-        if(clients.isEmpty()) { return; }
-
-        for (Client client : clients) {
-            List<Load> pendingLoads = paymentsRepository.getLoadsByStatus(Status.PENDING.name(), client.getId());
-            System.out.println("Loads pending to conciliate for client " + client.getId() + ": " + pendingLoads.size());
-            for (Load load: pendingLoads) {
-                try {
-                    DateFormat dateFormat = new SimpleDateFormat(DATABASE_DATETIME_FORMAT);
-                    Calendar loadDate = Calendar.getInstance();
-                    loadDate.setTime(dateFormat.parse(load.getCreatedAt()));
-                    loadDate.add(Calendar.HOUR, Integer.valueOf(pm.getProperty("PAYMENTS.MAX.PENDING.HOURS")));
-                    if(loadDate.getTime().before(new Date())) {
-                        paymentsRepository.updateLoadStatus(load.getId(), Status.DISMISSED);
-                        continue;
-                    }
-
-// If status is APPROVED then update balance with new amount
-                    Status status = checkOrder(load.getTransactionId(), client);
-                    if (Objects.isNull(status)) {
-                        continue;
-                    }
-                    if(status.name().equals(Status.APPROVED.name())) {
-                        paymentsRepository.updateBalance(load.getCustomerId(), round(load.getAmount(), 2));
-                        paymentsRepository.updateLoadStatus(load.getId(), Status.APPROVED);
-                    } else if (!status.equals(Status.PENDING)){
-                        paymentsRepository.updateLoadStatus(load.getId(), status);
-                    }
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-
-    @Override
     public String createClient(ClientDto client) {
         return clientsRepository.createClient(new Client.Builder()
                 .setName(client.getName())
@@ -462,26 +420,6 @@ public class BussinessManagerImpl implements BusinessManager{
             return true;
         }
         return false;
-    }
-
-    private Status checkOrder(String transactionId, Client client) {
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put(PayU.PARAMETERS.TRANSACTION_ID, transactionId);
-        Status statusResponse = null;
-
-        try {
-            PayU.paymentsUrl = pm.getProperty("PAYMENTS.API.URL");
-            PayU.reportsUrl = pm.getProperty("PAYMENTS.REPORTS.RESPONSE.URL");
-            PayU.apiKey = client.getGatewayApiKey();
-            PayU.apiLogin = client.getGatewayApiLogin();
-            PayU.merchantId = client.getGatewayMerchantId();
-            PayU.isTest = Boolean.valueOf(pm.getProperty("PAYMENTS.TEST.PAYMENT"));
-            TransactionResponse response = PayUReports.getTransactionResponse(parameters);
-            statusResponse = Status.valueOf(response.getState().name());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return statusResponse;
     }
 
     private static double round(double value, int places) {

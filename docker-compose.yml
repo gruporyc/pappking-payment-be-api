@@ -21,10 +21,15 @@ services:
     - db_data:/var/lib/mysql
     restart: always
 # Update DB environment variables with your own values
-    env_file:
-      - payments.env
+#    env_file:
+#      - payments.env
+    environment:
+      - MYSQL_USER=ppkpaymentsuser
+      - MYSQL_PASSWORD=ppkpayments
+      - MYSQL_DATABASE=ppk_payments
+      - MYSQL_ROOT_PASSWORD=adminadmin
     ports:
-    - "3307:3306"
+    - "3306:3306"
 
 #  adminer:
 #    image: adminer
@@ -34,24 +39,24 @@ services:
 
 #################################################################################################################
 ########################################### Application container ################################################
-  ppk-payment-api:
-    image: tomcat:8
-# Update container name with your own project proper container name (project-service-type)
-    container_name: ppk-payment-api
-# Update this volume link with your own .war generated file
-    volumes:
-      - ${PWD}/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
-# You should create your own env variables to setup your app
-    env_file:
-      - payments.env
-    restart: always
-# Database must be linked to the project to be sure that they are in the same docker network
-    links:
-      - db
-    depends_on:
-      - db
-# You must be sure that each application is dispatched by a different port to avoid service crash
-    ports:
-      - 8091:8080
+#  ppk-payment-api:
+#    image: tomcat:8
+## Update container name with your own project proper container name (project-service-type)
+#    container_name: ppk-payment-api
+## Update this volume link with your own .war generated file
+#    volumes:
+#      - ${PWD}/target/pappking.be.api.war:/usr/local/tomcat/webapps/api.war
+## You should create your own env variables to setup your app
+##    env_file:
+##      - payments.env
+#    restart: always
+## Database must be linked to the project to be sure that they are in the same docker network
+#    links:
+#      - db
+#    depends_on:
+#      - db
+## You must be sure that each application is dispatched by a different port to avoid service crash
+#    ports:
+#      - 8091:8080
 volumes:
   db_data:
